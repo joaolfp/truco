@@ -6,16 +6,19 @@ use iced::Element;
 use iced::Fill;
 use iced::widget::Column;
 use iced::widget::button;
+use iced::widget::canvas;
 use iced::widget::column;
 use iced::widget::container;
 use iced::widget::pick_list;
 use iced::widget::row;
 use iced::widget::scrollable;
 use iced::widget::space;
+use iced::widget::stack;
 use iced::widget::text;
 use iced::widget::toggler;
 
 use super::Message;
+use super::scene;
 use super::widgets::BOLD;
 use super::widgets::BOT_COLOR;
 use super::widgets::GOLD;
@@ -25,6 +28,7 @@ use super::widgets::badge;
 use super::widgets::card_back;
 use super::widgets::card_button;
 use super::widgets::card_face;
+use super::widgets::chalkboard;
 use super::widgets::hint_panel;
 use super::widgets::panel;
 use super::widgets::round_marker;
@@ -37,7 +41,6 @@ use crate::game::Player;
 use crate::game::TrickResult;
 use crate::i18n::Language;
 
-const TABLE_CARD: f32 = 88.0;
 const HAND_CARD: f32 = 104.0;
 
 pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message> {
@@ -45,19 +48,28 @@ pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message
 		.then(|| bot::decide(game, Player::Human, None))
 		.flatten();
 
-	let main = column![
-		top_bar(game, language, hints),
+	// The round table is drawn on a canvas; the bot's cards, prompts and the
+	// player's hand float over it.
+	let overlay = column![
 		opponent_area(game, language),
-		middle_area(game, language),
+		space::vertical(),
 		status_line(game, language),
 		actions(game, language),
 		player_hand(game, suggestion.map(|s| s.action)),
 	]
-	.spacing(16)
+	.spacing(12)
 	.align_x(Center)
-	.width(Fill);
+	.width(Fill)
+	.height(Fill);
+	let table = stack![
+		canvas(scene::Table { game }).width(Fill).height(Fill),
+		overlay,
+	];
+	let main = column![top_bar(game, language, hints), table]
+		.spacing(12)
+		.width(Fill);
 
-	let mut side = column![].spacing(16).width(300);
+	let mut side = column![info_panel(game, language)].spacing(16).width(300);
 	if let Some(suggestion) = suggestion {
 		side = side.push(
 			container(
@@ -97,7 +109,7 @@ fn top_bar<'a>(game: &'a Game, language: Language, hints: bool) -> Element<'a, M
 		.align_y(Center),
 	)
 	.padding([4, 16])
-	.style(panel);
+	.style(chalkboard);
 
 	row![
 		text("TRUCO").size(28).font(BOLD).color(GOLD),
@@ -126,66 +138,22 @@ fn opponent_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message>
 		.hand(Player::Bot)
 		.iter()
 		.fold(row![].spacing(8), |row, _| row.push(card_back(60.0)));
-	row![
-		text(language.strings().bot)
-			.size(20)
-			.font(BOLD)
-			.color(BOT_COLOR),
-		cards,
-	]
-	.spacing(16)
-	.align_y(Center)
-	.height(100)
-	.into()
+	row![badge(language.strings().bot, BOT_COLOR), cards,]
+		.spacing(16)
+		.align_y(Center)
+		.height(100)
+		.into()
 }
 
-fn middle_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
+fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 	let strings = language.strings();
 
 	let vira = column![
 		text(strings.vira).font(BOLD).color(MUTED),
-		card_face(game.vira, false, 72.0),
-		text(format!(
-			"{}: {}",
-			strings.manilha,
-			game.vira.rank.next().label()
-		))
-		.font(BOLD)
-		.color(GOLD),
+		card_face(game.vira, false, 52.0),
 	]
-	.spacing(8)
+	.spacing(6)
 	.align_x(Center);
-
-	let (title, cards) = if game.table.is_empty() && !game.last_trick.is_empty() {
-		(strings.last_round, &game.last_trick)
-	} else {
-		(strings.table, &game.table)
-	};
-	let played = cards
-		.iter()
-		.fold(row![].spacing(28), |row, &(player, card)| {
-			let color = match player {
-				Player::Human => HUMAN_COLOR,
-				Player::Bot => BOT_COLOR,
-			};
-			row.push(
-				column![
-					card_face(card, card.is_manilha(game.vira), TABLE_CARD),
-					text(language.player_name(player)).font(BOLD).color(color),
-				]
-				.spacing(6)
-				.align_x(Center),
-			)
-		});
-	let table = column![
-		text(title).font(BOLD).color(MUTED),
-		container(played)
-			.center_x(Fill)
-			.height(TABLE_CARD * 1.45 + 30.0),
-	]
-	.spacing(8)
-	.align_x(Center)
-	.width(Fill);
 
 	let markers = (0..3).fold(row![].spacing(8), |row, index| {
 		let fill = game.tricks.get(index).map(|result| match result {
@@ -195,7 +163,15 @@ fn middle_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 		});
 		row.push(round_marker(fill))
 	});
-	let rounds = column![
+	let details = column![
+		text(format!(
+			"{}: {}",
+			strings.manilha,
+			game.vira.rank.next().label()
+		))
+		.font(BOLD)
+		.size(18)
+		.color(GOLD),
 		text(strings.rounds).font(BOLD).color(MUTED),
 		markers,
 		row![
@@ -206,18 +182,13 @@ fn middle_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 		]
 		.spacing(8),
 	]
-	.spacing(10)
-	.align_x(Center);
+	.spacing(8);
 
-	container(
-		row![vira, table, rounds]
-			.spacing(24)
-			.align_y(Center)
-			.padding(16),
-	)
-	.width(Fill)
-	.style(panel)
-	.into()
+	container(row![vira, details].spacing(18).align_y(Center))
+		.padding(14)
+		.width(Fill)
+		.style(panel)
+		.into()
 }
 
 fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
@@ -247,7 +218,10 @@ fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 		Phase::Playing if game.turn == Player::Human => (strings.your_turn.to_string(), Color::WHITE),
 		_ => (strings.bot_thinking.to_string(), MUTED),
 	};
-	text(message).size(20).font(BOLD).color(color).into()
+	container(text(message).size(19).font(BOLD).color(color))
+		.padding([6, 16])
+		.style(panel)
+		.into()
 }
 
 fn action_button(

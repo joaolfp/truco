@@ -149,6 +149,8 @@ pub struct Game {
 	pub table: Vec<(Player, Card)>,
 	/// The most recently completed trick, kept so the UI can show it.
 	pub last_trick: Vec<(Player, Card)>,
+	/// Every card played in the current hand, in order (the pile on the table).
+	pub hand_plays: Vec<(Player, Card)>,
 	pub turn: Player,
 	pub stake: Stake,
 	/// The last player who raised; they cannot raise again until the other does.
@@ -181,6 +183,7 @@ impl Game {
 			tricks: Vec::new(),
 			table: Vec::new(),
 			last_trick: Vec::new(),
+			hand_plays: Vec::new(),
 			turn: Player::Human,
 			stake: Stake::One,
 			last_raiser: None,
@@ -210,6 +213,7 @@ impl Game {
 		self.tricks.clear();
 		self.table.clear();
 		self.last_trick.clear();
+		self.hand_plays.clear();
 		self.turn = self.hand_starter;
 		self.stake = Stake::One;
 		self.last_raiser = None;
@@ -383,6 +387,7 @@ impl Game {
 	fn play_card(&mut self, player: Player, index: usize) {
 		let card = self.hands[player.index()].remove(index);
 		self.table.push((player, card));
+		self.hand_plays.push((player, card));
 		self.events.push(Event::Played { player, card });
 
 		if self.table.len() < 2 {
