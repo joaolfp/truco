@@ -24,6 +24,7 @@ use super::widgets::BOT_COLOR;
 use super::widgets::GOLD;
 use super::widgets::HUMAN_COLOR;
 use super::widgets::MUTED;
+use super::widgets::avatar;
 use super::widgets::badge;
 use super::widgets::card_back;
 use super::widgets::card_button;
@@ -41,10 +42,16 @@ use crate::game::Phase;
 use crate::game::Player;
 use crate::game::TrickResult;
 use crate::i18n::Language;
+use crate::opponents::Opponent;
 
 const HAND_CARD: f32 = 104.0;
 
-pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message> {
+pub fn view<'a>(
+	game: &'a Game,
+	opponent: Opponent,
+	language: Language,
+	hints: bool,
+) -> Element<'a, Message> {
 	let suggestion = (hints && game.actor() == Some(Player::Human))
 		.then(|| bot::decide(game, Player::Human, None))
 		.flatten();
@@ -52,9 +59,9 @@ pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message
 	// The round table is drawn on a canvas; the bot's cards, prompts and the
 	// player's hand float over it.
 	let overlay = column![
-		opponent_area(game, language),
+		opponent_area(game, opponent, language),
 		space::vertical(),
-		status_line(game, language),
+		status_line(game, opponent, language),
 		actions(game, language),
 		player_hand(game, suggestion.map(|s| s.action)),
 	]
@@ -66,11 +73,13 @@ pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message
 		canvas(scene::Table { game }).width(Fill).height(Fill),
 		overlay,
 	];
-	let main = column![top_bar(game, language, hints), table]
+	let main = column![top_bar(game, opponent, language, hints), table]
 		.spacing(12)
 		.width(Fill);
 
-	let mut side = column![info_panel(game, language)].spacing(16).width(300);
+	let mut side = column![info_panel(game, opponent, language)]
+		.spacing(16)
+		.width(300);
 	if let Some(suggestion) = suggestion {
 		side = side.push(
 			container(
@@ -91,12 +100,17 @@ pub fn view(game: &Game, language: Language, hints: bool) -> Element<'_, Message
 			.style(hint_panel),
 		);
 	}
-	side = side.push(event_log(game, language));
+	side = side.push(event_log(game, opponent, language));
 
 	row![main, side].spacing(16).padding(16).into()
 }
 
-fn top_bar<'a>(game: &'a Game, language: Language, hints: bool) -> Element<'a, Message> {
+fn top_bar<'a>(
+	game: &'a Game,
+	opponent: Opponent,
+	language: Language,
+	hints: bool,
+) -> Element<'a, Message> {
 	let strings = language.strings();
 	let score = container(
 		row![
@@ -104,7 +118,7 @@ fn top_bar<'a>(game: &'a Game, language: Language, hints: bool) -> Element<'a, M
 			text(game.score(Player::Human)).size(30).font(BOLD),
 			text("x").size(18).color(MUTED),
 			text(game.score(Player::Bot)).size(30).font(BOLD),
-			text(strings.bot).size(18).color(BOT_COLOR).font(BOLD),
+			text(opponent.name).size(18).color(BOT_COLOR).font(BOLD),
 		]
 		.spacing(12)
 		.align_y(Center),
@@ -134,19 +148,36 @@ fn top_bar<'a>(game: &'a Game, language: Language, hints: bool) -> Element<'a, M
 	.into()
 }
 
-fn opponent_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
+fn opponent_area<'a>(
+	game: &'a Game,
+	opponent: Opponent,
+	language: Language,
+) -> Element<'a, Message> {
 	let cards = game
 		.hand(Player::Bot)
 		.iter()
 		.fold(row![].spacing(8), |row, _| row.push(card_back(60.0)));
-	row![badge(language.strings().bot, BOT_COLOR), cards,]
+	let who = row![
+		avatar(&opponent, 44.0),
+		column![
+			text(opponent.name).font(BOLD).size(18),
+			text(language.difficulty_name(opponent.difficulty))
+				.size(13)
+				.color(MUTED),
+		]
+		.spacing(2),
+	]
+	.spacing(10)
+	.align_y(Center);
+	let who = container(who).padding([6, 12]).style(panel);
+	row![who, cards]
 		.spacing(16)
 		.align_y(Center)
 		.height(100)
 		.into()
 }
 
-fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
+fn info_panel<'a>(game: &'a Game, opponent: Opponent, language: Language) -> Element<'a, Message> {
 	let strings = language.strings();
 
 	// Paulista shows the vira and the manilha rank it defines; Mineiro shows
@@ -194,7 +225,9 @@ fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 			text(format!("● {}", strings.you))
 				.size(13)
 				.color(HUMAN_COLOR),
-			text(format!("● {}", strings.bot)).size(13).color(BOT_COLOR),
+			text(format!("● {}", opponent.name))
+				.size(13)
+				.color(BOT_COLOR),
 		],
 	]
 	.spacing(12)
@@ -216,12 +249,12 @@ fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 	.into()
 }
 
-fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
+fn status_line<'a>(game: &'a Game, opponent: Opponent, language: Language) -> Element<'a, Message> {
 	let strings = language.strings();
 	let (message, color) = match game.phase {
 		Phase::MatchOver { winner } => match winner {
 			Player::Human => (strings.you_won_match.to_string(), GOLD),
-			Player::Bot => (strings.bot_won_match.to_string(), BOT_COLOR),
+			Player::Bot => (language.opponent_won_match(opponent.name), BOT_COLOR),
 		},
 		Phase::HandOver => {
 			let summary = game
@@ -229,19 +262,25 @@ fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 				.iter()
 				.rev()
 				.find(|event| matches!(event, Event::HandWon { .. } | Event::HandDrawn))
-				.map(|event| language.event(event, game.variant))
+				.map(|event| language.event(event, game.variant, opponent.name))
 				.unwrap_or_default();
 			(summary, GOLD)
 		}
 		Phase::ElevenDecision {
 			player: Player::Human,
-		} => (language.special_hand_prompt(game.variant), GOLD),
+		} => (
+			language.special_hand_prompt(game.variant, opponent.name),
+			GOLD,
+		),
 		Phase::AwaitingResponse {
 			responder: Player::Human,
 			proposed,
-		} => (language.bot_raised(proposed, game.variant), GOLD),
+		} => (
+			language.bot_raised(proposed, game.variant, opponent.name),
+			GOLD,
+		),
 		Phase::Playing if game.turn == Player::Human => (strings.your_turn.to_string(), Color::WHITE),
-		_ => (strings.bot_thinking.to_string(), MUTED),
+		_ => (language.thinking(opponent.name), MUTED),
 	};
 	container(text(message).size(19).font(BOLD).color(color))
 		.padding([6, 16])
@@ -344,14 +383,14 @@ fn player_hand<'a>(game: &'a Game, suggested: Option<Action>) -> Element<'a, Mes
 		.into()
 }
 
-fn event_log<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
+fn event_log<'a>(game: &'a Game, opponent: Opponent, language: Language) -> Element<'a, Message> {
 	let entries = game.events.iter().rev().take(40).map(|event| {
 		let color = match event {
 			Event::NewHand { .. } => GOLD,
 			Event::HandWon { .. } | Event::MatchWon { .. } | Event::HandDrawn => Color::WHITE,
 			_ => MUTED,
 		};
-		text(language.event(event, game.variant))
+		text(language.event(event, game.variant, opponent.name))
 			.size(14)
 			.color(color)
 			.into()

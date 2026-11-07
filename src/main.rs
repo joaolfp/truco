@@ -3,6 +3,7 @@
 mod bot;
 mod game;
 mod i18n;
+mod opponents;
 mod ui;
 
 use ui::App;

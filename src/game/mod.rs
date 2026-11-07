@@ -10,6 +10,7 @@ pub use card::Suit;
 pub use engine::Action;
 pub use engine::Event;
 pub use engine::Game;
+pub use engine::HandOutcome;
 pub use engine::Phase;
 pub use engine::Player;
 pub use engine::Stake;
