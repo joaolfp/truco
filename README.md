@@ -53,27 +53,26 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
 
 ## Getting started
 
-Requirements: [Rust](https://rustup.rs) (the toolchain version is pinned in `rust-toolchain.toml` and installed automatically by rustup).
+Requirements: [Rust](https://rustup.rs). The toolchain version is pinned in `rust-toolchain.toml` and installed automatically by rustup.
+
+### Install
 
 ```sh
+cargo install --git https://github.com/joaolfp/truco
+```
+
+Then start the game:
+
+```sh
+truco
+```
+
+### Run from source
+
+```sh
+git clone https://github.com/joaolfp/truco
+cd truco
 cargo run --release
-```
-
-If you use [mise](https://mise.jdx.dev), the usual tasks are available:
-
-```sh
-mise cli      # run the app
-mise test     # run the tests
-mise lint     # clippy
-mise fmt      # check formatting
-```
-
-### Regenerating the screenshots
-
-The screenshots are taken by the app itself. Build it with the `screenshots` feature and it walks through a scripted tour, saves PNGs to `docs/screenshots/` and quits:
-
-```sh
-cargo run --features screenshots
 ```
 
 ## How to play (quick version)
@@ -88,25 +87,6 @@ In **Truco Mineiro** there is no vira: the manilhas are always 4♣ > 7♥ > A�
 
 The in-app tutorial explains all of this in detail, including ties, the hand of eleven and the Mineiro differences.
 
-## Project structure
+## Development
 
-```
-src/
-├── main.rs          # app entry point
-├── bot.rs           # opponent AI per difficulty (the heuristic also powers hints)
-├── i18n.rs          # Portuguese and English text
-├── opponents.rs     # the four fictional opponents and their difficulty
-├── game/
-│   ├── card.rs      # suits, ranks, cards, deck, strength with the vira
-│   ├── engine.rs    # match state machine: tricks, raises, scoring
-│   └── variant.rs   # Paulista vs Mineiro: manilhas, stake values, special hand
-└── ui/
-    ├── mod.rs       # iced application: state, messages, update
-    ├── menu.rs      # main menu
-    ├── opponents.rs # opponent selection screen
-    ├── table.rs     # game screen
-    ├── tutorial.rs  # step-by-step tutorial and quizzes
-    ├── scene.rs     # canvas art: bar wall, round table, card pile, props
-    ├── widgets.rs   # cards, panels and colors
-    └── capture.rs   # screenshot tour (feature `screenshots`)
-```
+Architecture, project structure, development commands and the release process are covered in the [technical documentation](docs/README.md).
