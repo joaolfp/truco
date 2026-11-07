@@ -18,7 +18,6 @@ use iced::widget::text;
 
 use crate::game::Card;
 
-pub const FELT: Color = Color::from_rgb(0.06, 0.32, 0.20);
 pub const GOLD: Color = Color::from_rgb(0.98, 0.78, 0.20);
 pub const RED_SUIT: Color = Color::from_rgb(0.78, 0.13, 0.13);
 pub const BLACK_SUIT: Color = Color::from_rgb(0.10, 0.10, 0.12);
@@ -31,11 +30,28 @@ pub const BOLD: Font = Font {
 	..Font::DEFAULT
 };
 
-/// Background of the whole app: a card-table felt.
-pub fn felt(_theme: &iced::Theme) -> container::Style {
+/// Text color for screens drawn over the bar scene (no background of its own).
+pub fn ambient(_theme: &iced::Theme) -> container::Style {
 	container::Style {
-		background: Some(Background::Color(FELT)),
 		text_color: Some(Color::WHITE),
+		..container::Style::default()
+	}
+}
+
+/// A chalkboard with a wooden frame, like the scoreboards in a bar.
+pub fn chalkboard(_theme: &iced::Theme) -> container::Style {
+	container::Style {
+		background: Some(Background::Color(Color::from_rgb(0.15, 0.18, 0.16))),
+		border: Border::default()
+			.rounded(6)
+			.width(5)
+			.color(Color::from_rgb(0.55, 0.35, 0.17)),
+		shadow: Shadow {
+			color: Color::from_rgba(0.0, 0.0, 0.0, 0.5),
+			offset: Vector::new(0.0, 3.0),
+			blur_radius: 8.0,
+		},
+		text_color: Some(Color::from_rgb(0.95, 0.95, 0.92)),
 		..container::Style::default()
 	}
 }
@@ -43,7 +59,7 @@ pub fn felt(_theme: &iced::Theme) -> container::Style {
 /// A translucent dark panel used to group information.
 pub fn panel(_theme: &iced::Theme) -> container::Style {
 	container::Style {
-		background: Some(Background::Color(Color::from_rgba(0.0, 0.0, 0.0, 0.28))),
+		background: Some(Background::Color(Color::from_rgba(0.08, 0.04, 0.02, 0.72))),
 		border: Border::default().rounded(12),
 		text_color: Some(Color::WHITE),
 		..container::Style::default()

@@ -34,13 +34,6 @@ impl Language {
 		}
 	}
 
-	pub fn player_name(self, player: Player) -> &'static str {
-		match player {
-			Player::Human => self.strings().you,
-			Player::Bot => self.strings().bot,
-		}
-	}
-
 	/// Name of the call that raises the hand to `stake`.
 	pub fn raise_name(self, stake: Stake) -> &'static str {
 		match stake {
@@ -297,8 +290,6 @@ pub struct Strings {
 	pub bot: &'static str,
 	pub vira: &'static str,
 	pub manilha: &'static str,
-	pub table: &'static str,
-	pub last_round: &'static str,
 	pub rounds: &'static str,
 	pub log: &'static str,
 	pub hints: &'static str,
@@ -336,8 +327,6 @@ pub static PT_BR: Strings = Strings {
 	bot: "Bot",
 	vira: "Vira",
 	manilha: "Manilha",
-	table: "Mesa",
-	last_round: "Última rodada",
 	rounds: "Rodadas",
 	log: "Histórico",
 	hints: "Dicas",
@@ -429,8 +418,6 @@ pub static EN: Strings = Strings {
 	bot: "Bot",
 	vira: "Vira",
 	manilha: "Manilha",
-	table: "Table",
-	last_round: "Last round",
 	rounds: "Rounds",
 	log: "History",
 	hints: "Hints",

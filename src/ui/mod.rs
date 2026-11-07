@@ -3,6 +3,7 @@
 #[cfg(feature = "screenshots")]
 mod capture;
 mod menu;
+mod scene;
 mod table;
 mod tutorial;
 mod widgets;
@@ -14,7 +15,9 @@ use iced::Fill;
 use iced::Subscription;
 use iced::Task;
 use iced::Theme;
+use iced::widget::canvas;
 use iced::widget::container;
+use iced::widget::stack;
 
 use crate::bot;
 use crate::game::Action;
@@ -188,10 +191,14 @@ impl App {
 				None => menu::view(self.language, false),
 			},
 		};
-		container(content)
-			.width(Fill)
-			.height(Fill)
-			.style(widgets::felt)
-			.into()
+		let background = canvas(scene::Wall).width(Fill).height(Fill);
+		stack![
+			background,
+			container(content)
+				.width(Fill)
+				.height(Fill)
+				.style(widgets::ambient),
+		]
+		.into()
 	}
 }
