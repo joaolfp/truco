@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+fastrand = "2.5.0"
+iced = { version = "0.14", features = ["tokio"] }
+png = { version = "0.18.1", optional = true }
+
+[features]
+# Runs an automated tour that saves screenshots to docs/screenshots/.
+screenshots = ["dep:png"]
