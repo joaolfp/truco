@@ -25,11 +25,14 @@ use super::widgets::card_button;
 use super::widgets::card_face;
 use super::widgets::panel;
 use crate::game::Card;
+use crate::game::MINEIRO_MANILHAS;
 use crate::game::Rank;
+use crate::game::Stake;
 use crate::game::Suit;
+use crate::game::Variant;
 use crate::i18n::Language;
 
-pub const STEP_COUNT: usize = 12;
+pub const STEP_COUNT: usize = 13;
 
 const fn card(rank: Rank, suit: Suit) -> Card {
 	Card::new(rank, suit)
@@ -223,38 +226,7 @@ fn illustration(
 		.spacing(16)
 		.align_y(Center)
 		.into(),
-		8 => {
-			let ladder = [
-				("1", None),
-				("3", Some(crate::game::Stake::Three)),
-				("6", Some(crate::game::Stake::Six)),
-				("9", Some(crate::game::Stake::Nine)),
-				("12", Some(crate::game::Stake::Twelve)),
-			];
-			ladder
-				.into_iter()
-				.enumerate()
-				.fold(
-					row![].spacing(10).align_y(Center),
-					|row, (i, (points, stake))| {
-						let row = if i == 0 {
-							row
-						} else {
-							row.push(text("→").size(24).color(GOLD))
-						};
-						let name = stake.map_or(String::from("—"), |s| language.raise_button(s));
-						row.push(
-							column![
-								badge(points, Color::from_rgb(0.75, 0.45, 0.05)),
-								caption(name)
-							]
-							.spacing(4)
-							.align_x(Center),
-						)
-					},
-				)
-				.into()
-		}
+		8 => stake_ladder(language, Variant::Paulista),
 		10 => row![
 			badge(format!("{} 11", strings.you), HUMAN_COLOR),
 			text("x").size(24).color(MUTED),
@@ -263,6 +235,23 @@ fn illustration(
 		.spacing(12)
 		.align_y(Center)
 		.into(),
+		11 => {
+			let manilhas = MINEIRO_MANILHAS.iter().rev().enumerate().fold(
+				row![].spacing(10).align_y(Center),
+				|row, (i, &manilha)| {
+					let row = if i == 0 {
+						row
+					} else {
+						row.push(text(">").size(24).color(GOLD))
+					};
+					row.push(card_face(manilha, true, small))
+				},
+			);
+			column![manilhas, stake_ladder(language, Variant::Mineiro)]
+				.spacing(18)
+				.align_x(Center)
+				.into()
+		}
 		_ => row![
 			card_face(card(Rank::Four, Suit::Clubs), true, medium),
 			card_face(card(Rank::Seven, Suit::Hearts), false, medium),
@@ -271,6 +260,43 @@ fn illustration(
 		.spacing(16)
 		.into(),
 	}
+}
+
+/// The raise ladder with the points of each call for a variant.
+fn stake_ladder(language: Language, variant: Variant) -> Element<'static, Message> {
+	[
+		Stake::Base,
+		Stake::Truco,
+		Stake::Six,
+		Stake::Nine,
+		Stake::Twelve,
+	]
+	.into_iter()
+	.enumerate()
+	.fold(row![].spacing(10).align_y(Center), |row, (i, stake)| {
+		let row = if i == 0 {
+			row
+		} else {
+			row.push(text("→").size(24).color(GOLD))
+		};
+		let name = if stake == Stake::Base {
+			String::from("—")
+		} else {
+			language.raise_button(stake)
+		};
+		row.push(
+			column![
+				badge(
+					variant.stake_value(stake).to_string(),
+					Color::from_rgb(0.75, 0.45, 0.05)
+				),
+				caption(name)
+			]
+			.spacing(4)
+			.align_x(Center),
+		)
+	})
+	.into()
 }
 
 pub fn view(

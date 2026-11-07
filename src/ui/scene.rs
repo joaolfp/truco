@@ -369,15 +369,17 @@ fn draw_card(frame: &mut Frame, center: Point, angle: f32, card: Option<Card>, h
 	});
 }
 
-/// The remaining deck, face down, with the vira face up beside it.
+/// The remaining deck, face down, with the vira face up beside it (Paulista only).
 fn draw_deck_and_vira(frame: &mut Frame, at: Point, game: &Game) {
-	draw_card(
-		frame,
-		Point::new(at.x + 92.0, at.y + 22.0),
-		0.16,
-		Some(game.vira),
-		false,
-	);
+	if let Some(vira) = game.vira {
+		draw_card(
+			frame,
+			Point::new(at.x + 92.0, at.y + 22.0),
+			0.16,
+			Some(vira),
+			false,
+		);
+	}
 	for i in 0..6 {
 		let offset = i as f32 * 1.4;
 		draw_card(
@@ -409,7 +411,7 @@ fn draw_pile(frame: &mut Frame, center: Point, game: &Game) {
 			Point::new(center.x + jitter_x, center.y + toward + jitter_y),
 			angle,
 			Some(card),
-			card.is_manilha(game.vira),
+			game.is_manilha(card),
 		);
 	}
 }

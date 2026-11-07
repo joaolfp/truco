@@ -46,14 +46,13 @@ pub struct Decision {
 }
 
 /// Normalized power of a card (0.0 weakest, 1.0 the zap).
-fn power(card: Card, vira: Card) -> f32 {
-	f32::from(card.strength(vira)) / 13.0
+fn power(game: &Game, card: Card) -> f32 {
+	f32::from(game.strength(card)) / 13.0
 }
 
 /// Estimates how likely `player` is to win the current hand (0.0 – 1.0).
 pub fn confidence(game: &Game, player: Player) -> f32 {
-	let vira = game.vira;
-	let mut powers: Vec<f32> = game.hand(player).iter().map(|&c| power(c, vira)).collect();
+	let mut powers: Vec<f32> = game.hand(player).iter().map(|&c| power(game, c)).collect();
 	powers.sort_by(|a, b| b.total_cmp(a));
 	let p = |i: usize| powers.get(i).copied().unwrap_or(0.0);
 
@@ -73,8 +72,11 @@ pub fn confidence(game: &Game, player: Player) -> f32 {
 	if let Some(&(owner, card)) = game.table.first()
 		&& owner != player
 	{
-		let to_beat = card.strength(vira);
-		let can_beat = game.hand(player).iter().any(|c| c.strength(vira) > to_beat);
+		let to_beat = game.strength(card);
+		let can_beat = game
+			.hand(player)
+			.iter()
+			.any(|&c| game.strength(c) > to_beat);
 		estimate += if can_beat { 0.15 } else { -0.2 };
 	}
 
@@ -82,16 +84,14 @@ pub fn confidence(game: &Game, player: Player) -> f32 {
 }
 
 fn sorted_indices(game: &Game, player: Player) -> Vec<usize> {
-	let vira = game.vira;
 	let hand = game.hand(player);
 	let mut indices: Vec<usize> = (0..hand.len()).collect();
-	indices.sort_by_key(|&i| hand[i].strength(vira));
+	indices.sort_by_key(|&i| game.strength(hand[i]));
 	indices
 }
 
 /// Picks which card to play.
 fn choose_card(game: &Game, player: Player) -> Decision {
-	let vira = game.vira;
 	let hand = game.hand(player);
 	let by_strength = sorted_indices(game, player);
 	let weakest = by_strength[0];
@@ -106,10 +106,10 @@ fn choose_card(game: &Game, player: Player) -> Decision {
 	}
 
 	if let Some(&(_, opponent_card)) = game.table.first() {
-		let target = opponent_card.strength(vira);
+		let target = game.strength(opponent_card);
 		if let Some(&index) = by_strength
 			.iter()
-			.find(|&&i| hand[i].strength(vira) > target)
+			.find(|&&i| game.strength(hand[i]) > target)
 		{
 			return play(index, Reason::BeatCheaply);
 		}
@@ -118,7 +118,7 @@ fn choose_card(game: &Game, player: Player) -> Decision {
 		if won_first
 			&& let Some(&index) = by_strength
 				.iter()
-				.find(|&&i| hand[i].strength(vira) == target)
+				.find(|&&i| game.strength(hand[i]) == target)
 		{
 			return play(index, Reason::TieIsEnough);
 		}
@@ -194,7 +194,7 @@ pub fn decide(game: &Game, player: Player, rng: Option<&mut fastrand::Rng>) -> O
 /// Higher stakes demand more confidence.
 fn stake_pressure(stake: Stake) -> f32 {
 	match stake {
-		Stake::One | Stake::Three => 0.0,
+		Stake::Base | Stake::Truco => 0.0,
 		Stake::Six => 0.05,
 		Stake::Nine => 0.1,
 		Stake::Twelve => 0.15,
@@ -206,11 +206,12 @@ mod tests {
 	use super::*;
 	use crate::game::Rank;
 	use crate::game::Suit;
+	use crate::game::Variant;
 
 	#[test]
 	fn bot_beats_cheaply() {
-		let mut game = Game::with_seed(11);
-		game.vira = Card::new(Rank::Four, Suit::Clubs);
+		let mut game = Game::with_seed(11, Variant::Paulista);
+		game.vira = Some(Card::new(Rank::Four, Suit::Clubs));
 		game.hands[0] = vec![Card::new(Rank::King, Suit::Hearts)];
 		game.hands[1] = vec![
 			Card::new(Rank::Three, Suit::Clubs),
@@ -229,8 +230,9 @@ mod tests {
 
 	#[test]
 	fn bot_plays_full_matches() {
-		for seed in 0..100 {
-			let mut game = Game::with_seed(seed);
+		for seed in 0..200 {
+			let variant = Variant::ALL[seed as usize % 2];
+			let mut game = Game::with_seed(seed, variant);
 			let mut rng = fastrand::Rng::with_seed(seed);
 			for _ in 0..5_000 {
 				match game.phase {

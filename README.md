@@ -1,6 +1,6 @@
 # Truco
 
-A desktop **Truco Paulista** card game written in Rust with [iced](https://iced.rs). Play one-on-one against a bot, and learn the rules with a step-by-step interactive tutorial.
+A desktop **Truco** card game written in Rust with [iced](https://iced.rs). Play one-on-one against a bot in **Truco Paulista** or **Truco Mineiro**, at a round table in a Brazilian *boteco*, and learn the rules with a step-by-step interactive tutorial.
 
 The app ships in **Brazilian Portuguese** by default and can be switched to **English** at any time.
 
@@ -8,7 +8,15 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
 
 ## Features
 
-- **Full Truco Paulista rules (1 vs 1)**
+- **Two game modes**, picked in the main menu:
+
+  | | Truco Paulista | Truco Mineiro |
+  | --- | --- | --- |
+  | Manilhas | Rank after the *vira*, ordered ♦ < ♠ < ♥ < ♣ | Fixed: 4♣ (zap) > 7♥ > A♠ (espadilha) > 7♦ (pica-fumo) |
+  | Raise ladder | 1 → 3 → 6 → 9 → 12 | 2 → 4 → 8 → 10 → 12 |
+  | Special hand | *Mão de onze* (11 points) | *Mão de dez* (10 points) |
+
+- **Truco Paulista rules in detail (1 vs 1)**
   - 40-card deck (no 8s, 9s, 10s or jokers), 3 cards per player
   - The *vira* and *manilhas*: the rank right after the vira beats everything, ordered by suit ♦ < ♠ < ♥ < ♣ (the *zap*)
   - Best of 3 rounds per hand, with the classic tie rules
@@ -30,9 +38,9 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
 | --- | --- |
 | ![Tutorial: manilhas](docs/screenshots/tutorial-manilhas.png) | ![Tutorial quiz](docs/screenshots/tutorial-quiz.png) |
 
-The game in English:
-
-![Game in English](docs/screenshots/game-english.png)
+| Truco Mineiro | In English |
+| --- | --- |
+| ![Truco Mineiro](docs/screenshots/game-mineiro.png) | ![Game in English](docs/screenshots/game-english.png) |
 
 ## Getting started
 
@@ -67,7 +75,9 @@ cargo run --features screenshots
 4. A hand is worth 1 point. On your turn you can call **Truco** to raise it to 3, and the opponent can raise back to 6, 9 and 12.
 5. First to 12 points wins the match.
 
-The in-app tutorial explains all of this in detail, including ties and the hand of eleven.
+In **Truco Mineiro** there is no vira: the manilhas are always 4♣ > 7♥ > A♠ > 7♦, hands start at 2 points (truco 4, six 8, nine 10, twelve 12) and the special hand happens at 10 points.
+
+The in-app tutorial explains all of this in detail, including ties, the hand of eleven and the Mineiro differences.
 
 ## Project structure
 
@@ -78,12 +88,14 @@ src/
 ├── i18n.rs          # Portuguese and English text
 ├── game/
 │   ├── card.rs      # suits, ranks, cards, deck, strength with the vira
-│   └── engine.rs    # match state machine: tricks, raises, scoring
+│   ├── engine.rs    # match state machine: tricks, raises, scoring
+│   └── variant.rs   # Paulista vs Mineiro: manilhas, stake values, special hand
 └── ui/
     ├── mod.rs       # iced application: state, messages, update
     ├── menu.rs      # main menu
     ├── table.rs     # game screen
     ├── tutorial.rs  # step-by-step tutorial and quizzes
+    ├── scene.rs     # canvas art: bar wall, round table, card pile, props
     ├── widgets.rs   # cards, panels and colors
     └── capture.rs   # screenshot tour (feature `screenshots`)
 ```

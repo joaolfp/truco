@@ -9,6 +9,7 @@ use crate::game::Game;
 use crate::game::Phase;
 use crate::game::Player;
 use crate::game::Stake;
+use crate::game::Variant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Language {
@@ -37,8 +38,8 @@ impl Language {
 	/// Name of the call that raises the hand to `stake`.
 	pub fn raise_name(self, stake: Stake) -> &'static str {
 		match stake {
-			Stake::One => "-",
-			Stake::Three => "Truco",
+			Stake::Base => "-",
+			Stake::Truco => "Truco",
 			Stake::Six => self.pick("Seis", "Six"),
 			Stake::Nine => self.pick("Nove", "Nine"),
 			Stake::Twelve => self.pick("Doze", "Twelve"),
@@ -54,10 +55,53 @@ impl Language {
 		}
 	}
 
-	pub fn hand_worth(self, stake: Stake) -> String {
+	pub fn hand_worth(self, points: u8) -> String {
 		match self {
-			Language::PortugueseBr => format!("Valendo {}", self.points(stake.value())),
-			Language::English => format!("Worth {}", self.points(stake.value())),
+			Language::PortugueseBr => format!("Valendo {}", self.points(points)),
+			Language::English => format!("Worth {}", self.points(points)),
+		}
+	}
+
+	pub fn variant_name(self, variant: Variant) -> &'static str {
+		match variant {
+			Variant::Paulista => self.pick("Truco Paulista", "Truco Paulista"),
+			Variant::Mineiro => self.pick("Truco Mineiro", "Truco Mineiro"),
+		}
+	}
+
+	pub fn variant_summary(self, variant: Variant) -> &'static str {
+		match variant {
+			Variant::Paulista => self.pick(
+				"Manilhas mudam com a vira • mão vale 1",
+				"Manilhas change with the vira • hands worth 1",
+			),
+			Variant::Mineiro => self.pick(
+				"Manilhas fixas: 4♣ 7♥ A♠ 7♦ • mão vale 2",
+				"Fixed manilhas: 4♣ 7♥ A♠ 7♦ • hands worth 2",
+			),
+		}
+	}
+
+	/// "Mão de onze" (Paulista) or "mão de dez" (Mineiro).
+	pub fn special_hand(self, variant: Variant) -> &'static str {
+		match variant {
+			Variant::Paulista => self.pick("mão de onze", "hand of eleven"),
+			Variant::Mineiro => self.pick("mão de dez", "hand of ten"),
+		}
+	}
+
+	pub fn special_hand_prompt(self, variant: Variant) -> String {
+		let name = capitalize(self.special_hand(variant));
+		let score = variant.special_hand_score();
+		let play = self.points(variant.stake_value(Stake::Truco));
+		let run = self.points(variant.stake_value(Stake::Base));
+		match self {
+			Language::PortugueseBr => {
+				format!("{name}! Você tem {score} pontos. Jogar vale {play}; correr dá {run} ao bot.")
+			}
+			Language::English => format!(
+				"{name}! You have {score} points. Playing is worth {play}; running gives the bot {run}."
+			),
 		}
 	}
 
@@ -68,17 +112,17 @@ impl Language {
 		}
 	}
 
-	pub fn bot_raised(self, stake: Stake) -> String {
+	pub fn bot_raised(self, stake: Stake, variant: Variant) -> String {
 		match self {
 			Language::PortugueseBr => format!(
 				"O bot pediu {}! Aceitar faz a mão valer {}.",
 				self.raise_name(stake).to_uppercase(),
-				self.points(stake.value())
+				self.points(variant.stake_value(stake))
 			),
 			Language::English => format!(
 				"The bot called {}! Accepting makes the hand worth {}.",
 				self.raise_name(stake).to_uppercase(),
-				self.points(stake.value())
+				self.points(variant.stake_value(stake))
 			),
 		}
 	}
@@ -87,28 +131,46 @@ impl Language {
 		format!("{}!", self.raise_name(stake).to_uppercase())
 	}
 
-	pub fn event(self, event: &Event) -> String {
+	pub fn event(self, event: &Event, variant: Variant) -> String {
 		let pt = self == Language::PortugueseBr;
+		let special = self.special_hand(variant);
+		let special_value = self.points(variant.stake_value(Stake::Truco));
 		let human = |player: &Player| *player == Player::Human;
 		match event {
-			Event::NewHand { starter, vira } => match (pt, human(starter)) {
-				(true, true) => format!("Nova mão! Vira: {vira}. Você começa."),
-				(true, false) => format!("Nova mão! Vira: {vira}. O bot começa."),
-				(false, true) => format!("New hand! Vira: {vira}. You lead."),
-				(false, false) => format!("New hand! Vira: {vira}. The bot leads."),
-			},
-			Event::ElevenHand { player } => match (pt, human(player)) {
-				(true, true) => "Mão de onze! Veja suas cartas e decida se joga.".into(),
-				(true, false) => "Mão de onze do bot: ele decide se joga.".into(),
-				(false, true) => "Hand of eleven! Look at your cards and decide whether to play.".into(),
-				(false, false) => "The bot has a hand of eleven: it decides whether to play.".into(),
-			},
-			Event::IronHand => self
-				.pick(
-					"Mão de ferro! Os dois têm 11: vale 1 ponto e não tem truco.",
-					"Iron hand! Both have 11: worth 1 point and no truco.",
-				)
-				.into(),
+			Event::NewHand { starter, vira } => {
+				let vira = vira.map(|vira| match self {
+					Language::PortugueseBr => format!(" Vira: {vira}."),
+					Language::English => format!(" Vira: {vira}."),
+				});
+				let vira = vira.unwrap_or_default();
+				match (pt, human(starter)) {
+					(true, true) => format!("Nova mão!{vira} Você começa."),
+					(true, false) => format!("Nova mão!{vira} O bot começa."),
+					(false, true) => format!("New hand!{vira} You lead."),
+					(false, false) => format!("New hand!{vira} The bot leads."),
+				}
+			}
+			Event::ElevenHand { player } => {
+				let name = capitalize(special);
+				match (pt, human(player)) {
+					(true, true) => format!("{name}! Veja suas cartas e decida se joga."),
+					(true, false) => format!("{name} do bot: ele decide se joga."),
+					(false, true) => format!("{name}! Look at your cards and decide whether to play."),
+					(false, false) => format!("The bot has a {special}: it decides whether to play."),
+				}
+			}
+			Event::IronHand => {
+				let score = variant.special_hand_score();
+				let points = self.points(variant.stake_value(Stake::Base));
+				match self {
+					Language::PortugueseBr => {
+						format!("Mão de ferro! Os dois têm {score}: vale {points} e não tem truco.")
+					}
+					Language::English => {
+						format!("Iron hand! Both have {score}: worth {points} and no truco.")
+					}
+				}
+			}
 			Event::Played { player, card } => match (pt, human(player)) {
 				(true, true) => format!("Você jogou {card}."),
 				(true, false) => format!("O bot jogou {card}."),
@@ -132,7 +194,7 @@ impl Language {
 				}
 			}
 			Event::Accepted { player, stake } => {
-				let points = self.points(stake.value());
+				let points = self.points(variant.stake_value(*stake));
 				match (pt, human(player)) {
 					(true, true) => format!("Você aceitou. A mão vale {points}."),
 					(true, false) => format!("O bot aceitou. A mão vale {points}."),
@@ -147,16 +209,16 @@ impl Language {
 				(false, false) => "The bot ran!".into(),
 			},
 			Event::ElevenAccepted { player } => match (pt, human(player)) {
-				(true, true) => "Você vai jogar a mão de onze (vale 3).".into(),
-				(true, false) => "O bot vai jogar a mão de onze (vale 3).".into(),
-				(false, true) => "You'll play the hand of eleven (worth 3).".into(),
-				(false, false) => "The bot will play the hand of eleven (worth 3).".into(),
+				(true, true) => format!("Você vai jogar a {special} (vale {special_value})."),
+				(true, false) => format!("O bot vai jogar a {special} (vale {special_value})."),
+				(false, true) => format!("You'll play the {special} (worth {special_value})."),
+				(false, false) => format!("The bot will play the {special} (worth {special_value})."),
 			},
 			Event::ElevenFolded { player } => match (pt, human(player)) {
-				(true, true) => "Você correu da mão de onze.".into(),
-				(true, false) => "O bot correu da mão de onze.".into(),
-				(false, true) => "You ran from the hand of eleven.".into(),
-				(false, false) => "The bot ran from the hand of eleven.".into(),
+				(true, true) => format!("Você correu da {special}."),
+				(true, false) => format!("O bot correu da {special}."),
+				(false, true) => format!("You ran from the {special}."),
+				(false, false) => format!("The bot ran from the {special}."),
 			},
 			Event::HandWon { player, points } => {
 				let points = self.points(*points);
@@ -254,15 +316,23 @@ impl Language {
 				"Your hand is weak: run and lose only the current value.",
 			),
 			Reason::ElevenPlay => self.pick(
-				"Suas cartas são boas: jogue a mão de onze.",
-				"Your cards are good: play the hand of eleven.",
+				"Suas cartas são boas: jogue a mão.",
+				"Your cards are good: play the hand.",
 			),
 			Reason::ElevenFold => self.pick(
-				"Suas cartas são fracas: correr custa só 1 ponto.",
-				"Your cards are weak: running costs only 1 point.",
+				"Suas cartas são fracas: correr custa só o valor de uma mão simples.",
+				"Your cards are weak: running costs only a regular hand's value.",
 			),
 		}
 	}
+}
+
+fn capitalize(text: &str) -> String {
+	let mut chars = text.chars();
+	chars
+		.next()
+		.map(|first| first.to_uppercase().chain(chars).collect())
+		.unwrap_or_default()
 }
 
 impl fmt::Display for Language {
@@ -299,7 +369,8 @@ pub struct Strings {
 	pub accept: &'static str,
 	pub run: &'static str,
 	pub play_eleven: &'static str,
-	pub eleven_prompt: &'static str,
+	pub game_mode: &'static str,
+	pub manilhas: &'static str,
 	pub next_hand: &'static str,
 	pub new_match: &'static str,
 	pub you_won_match: &'static str,
@@ -313,11 +384,11 @@ pub struct Strings {
 	pub weakest: &'static str,
 	pub strongest: &'static str,
 	pub manilha_names: [&'static str; 4],
-	pub tutorial_steps: [TutorialStep; 12],
+	pub tutorial_steps: [TutorialStep; 13],
 }
 
 pub static PT_BR: Strings = Strings {
-	subtitle: "Truco Paulista • você contra o bot",
+	subtitle: "Paulista ou Mineiro • você contra o bot",
 	play: "Jogar",
 	continue_match: "Continuar partida",
 	tutorial: "Tutorial",
@@ -336,7 +407,8 @@ pub static PT_BR: Strings = Strings {
 	accept: "Aceitar",
 	run: "Correr",
 	play_eleven: "Jogar a mão",
-	eleven_prompt: "Mão de onze! Você tem 11 pontos. Jogar vale 3 pontos; correr dá 1 ponto ao bot.",
+	game_mode: "Modo de jogo",
+	manilhas: "Manilhas",
 	next_hand: "Próxima mão",
 	new_match: "Nova partida",
 	you_won_match: "Parabéns, você venceu!",
@@ -358,7 +430,7 @@ pub static PT_BR: Strings = Strings {
 	tutorial_steps: [
 		TutorialStep {
 			title: "Bem-vindo ao Truco!",
-			body: "Truco é um jogo de cartas de blefe e estratégia muito popular no Brasil. Aqui você joga o Truco Paulista, um contra um, contra o bot.\n\nO objetivo é ser o primeiro a fazer 12 pontos. Cada mão vale pontos, e você pode aumentar esse valor pedindo truco.",
+			body: "Truco é um jogo de cartas de blefe e estratégia muito popular no Brasil. Aqui você joga um contra um contra o bot, no Truco Paulista ou no Truco Mineiro. Este tutorial ensina o Paulista e, no fim, mostra o que muda no Mineiro.\n\nO objetivo é ser o primeiro a fazer 12 pontos. Cada mão vale pontos, e você pode aumentar esse valor pedindo truco.",
 		},
 		TutorialStep {
 			title: "O baralho",
@@ -401,6 +473,10 @@ pub static PT_BR: Strings = Strings {
 			body: "Quem chega a 11 pontos joga a mão de onze: vê as cartas e decide se joga (a mão vale 3) ou corre (o adversário ganha 1 ponto). Nessa mão ninguém pode pedir truco.\n\nSe os dois tiverem 11, é a mão de ferro: vale 1 ponto e também não tem truco.",
 		},
 		TutorialStep {
+			title: "E o Truco Mineiro?",
+			body: "No menu você escolhe entre Truco Paulista e Truco Mineiro. No Mineiro:\n\n• Não tem vira: as manilhas são sempre as mesmas: 4 de paus (zap) > 7 de copas > ás de espadas (espadilha) > 7 de ouros (pica-fumo).\n• A mão vale 2 pontos. Truco vale 4, seis vale 8, nove vale 10 e doze vale 12.\n• No lugar da mão de onze tem a mão de dez: jogar vale 4 e correr dá 2 ao adversário.\n\nO resto (rodadas, empates, aceitar ou correr) é igual.",
+		},
+		TutorialStep {
 			title: "Pronto para jogar!",
 			body: "Na partida, clique numa carta para jogá-la. Use os botões para pedir truco, aceitar ou correr.\n\nLigue as Dicas no topo da tela: elas sugerem uma jogada e explicam o porquê. Blefar faz parte do jogo, e o bot também blefa de vez em quando. Boa sorte!",
 		},
@@ -408,7 +484,7 @@ pub static PT_BR: Strings = Strings {
 };
 
 pub static EN: Strings = Strings {
-	subtitle: "Truco Paulista • you versus the bot",
+	subtitle: "Paulista or Mineiro • you versus the bot",
 	play: "Play",
 	continue_match: "Continue match",
 	tutorial: "Tutorial",
@@ -427,7 +503,8 @@ pub static EN: Strings = Strings {
 	accept: "Accept",
 	run: "Run",
 	play_eleven: "Play the hand",
-	eleven_prompt: "Hand of eleven! You have 11 points. Playing is worth 3 points; running gives the bot 1 point.",
+	game_mode: "Game mode",
+	manilhas: "Manilhas",
 	next_hand: "Next hand",
 	new_match: "New match",
 	you_won_match: "Congratulations, you won!",
@@ -444,7 +521,7 @@ pub static EN: Strings = Strings {
 	tutorial_steps: [
 		TutorialStep {
 			title: "Welcome to Truco!",
-			body: "Truco is a card game of bluffing and strategy, hugely popular in Brazil. Here you play Truco Paulista, one on one, against the bot.\n\nThe goal is to be the first to reach 12 points. Each hand is worth points, and you can raise that value by calling truco.",
+			body: "Truco is a card game of bluffing and strategy, hugely popular in Brazil. Here you play one on one against the bot, in Truco Paulista or Truco Mineiro. This tutorial teaches Paulista and, at the end, shows what changes in Mineiro.\n\nThe goal is to be the first to reach 12 points. Each hand is worth points, and you can raise that value by calling truco.",
 		},
 		TutorialStep {
 			title: "The deck",
@@ -485,6 +562,10 @@ pub static EN: Strings = Strings {
 		TutorialStep {
 			title: "Hand of eleven and iron hand",
 			body: "A player who reaches 11 points plays the hand of eleven: they see their cards and decide to play (the hand is worth 3) or run (the opponent gets 1 point). Nobody can call truco in this hand.\n\nIf both players have 11, it's the iron hand: worth 1 point and no truco either.",
+		},
+		TutorialStep {
+			title: "What about Truco Mineiro?",
+			body: "In the menu you can pick Truco Paulista or Truco Mineiro. In Mineiro:\n\n• There is no vira: the manilhas never change: 4 of clubs (zap) > 7 of hearts > ace of spades (espadilha) > 7 of diamonds (pica-fumo).\n• A hand is worth 2 points. Truco is worth 4, six is worth 8, nine is worth 10 and twelve is worth 12.\n• Instead of the hand of eleven there is the hand of ten: playing is worth 4 and running gives your opponent 2.\n\nEverything else (rounds, ties, accepting or running) is the same.",
 		},
 		TutorialStep {
 			title: "Ready to play!",
