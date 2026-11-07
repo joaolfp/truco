@@ -36,6 +36,7 @@ use crate::bot;
 use crate::game::Action;
 use crate::game::Event;
 use crate::game::Game;
+use crate::game::MINEIRO_MANILHAS;
 use crate::game::Phase;
 use crate::game::Player;
 use crate::game::TrickResult;
@@ -116,7 +117,7 @@ fn top_bar<'a>(game: &'a Game, language: Language, hints: bool) -> Element<'a, M
 		space::horizontal(),
 		score,
 		badge(
-			language.hand_worth(game.stake),
+			language.hand_worth(game.stake_value(game.stake)),
 			Color::from_rgb(0.75, 0.45, 0.05)
 		),
 		space::horizontal(),
@@ -148,12 +149,35 @@ fn opponent_area<'a>(game: &'a Game, language: Language) -> Element<'a, Message>
 fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 	let strings = language.strings();
 
-	let vira = column![
-		text(strings.vira).font(BOLD).color(MUTED),
-		card_face(game.vira, false, 52.0),
-	]
-	.spacing(6)
-	.align_x(Center);
+	// Paulista shows the vira and the manilha rank it defines; Mineiro shows
+	// its four fixed manilhas, strongest first.
+	let manilhas: Element<'_, Message> = match game.vira {
+		Some(vira) => row![
+			column![
+				text(strings.vira).font(BOLD).color(MUTED),
+				card_face(vira, false, 52.0),
+			]
+			.spacing(6)
+			.align_x(Center),
+			text(format!("{}: {}", strings.manilha, vira.rank.next().label()))
+				.font(BOLD)
+				.size(18)
+				.color(GOLD),
+		]
+		.spacing(18)
+		.align_y(Center)
+		.into(),
+		None => column![
+			text(strings.manilhas).font(BOLD).color(MUTED),
+			MINEIRO_MANILHAS
+				.iter()
+				.rev()
+				.fold(row![].spacing(8), |row, &card| row
+					.push(card_face(card, true, 46.0))),
+		]
+		.spacing(6)
+		.into(),
+	};
 
 	let markers = (0..3).fold(row![].spacing(8), |row, index| {
 		let fill = game.tricks.get(index).map(|result| match result {
@@ -163,32 +187,33 @@ fn info_panel<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 		});
 		row.push(round_marker(fill))
 	});
-	let details = column![
-		text(format!(
-			"{}: {}",
-			strings.manilha,
-			game.vira.rank.next().label()
-		))
-		.font(BOLD)
-		.size(18)
-		.color(GOLD),
+	let rounds = row![
 		text(strings.rounds).font(BOLD).color(MUTED),
 		markers,
-		row![
+		column![
 			text(format!("● {}", strings.you))
 				.size(13)
 				.color(HUMAN_COLOR),
 			text(format!("● {}", strings.bot)).size(13).color(BOT_COLOR),
-		]
-		.spacing(8),
+		],
 	]
-	.spacing(8);
+	.spacing(12)
+	.align_y(Center);
 
-	container(row![vira, details].spacing(18).align_y(Center))
-		.padding(14)
-		.width(Fill)
-		.style(panel)
-		.into()
+	container(
+		column![
+			text(language.variant_name(game.variant))
+				.font(BOLD)
+				.size(16),
+			manilhas,
+			rounds,
+		]
+		.spacing(12),
+	)
+	.padding(14)
+	.width(Fill)
+	.style(panel)
+	.into()
 }
 
 fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
@@ -204,17 +229,17 @@ fn status_line<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 				.iter()
 				.rev()
 				.find(|event| matches!(event, Event::HandWon { .. } | Event::HandDrawn))
-				.map(|event| language.event(event))
+				.map(|event| language.event(event, game.variant))
 				.unwrap_or_default();
 			(summary, GOLD)
 		}
 		Phase::ElevenDecision {
 			player: Player::Human,
-		} => (strings.eleven_prompt.to_string(), GOLD),
+		} => (language.special_hand_prompt(game.variant), GOLD),
 		Phase::AwaitingResponse {
 			responder: Player::Human,
 			proposed,
-		} => (language.bot_raised(proposed), GOLD),
+		} => (language.bot_raised(proposed, game.variant), GOLD),
 		Phase::Playing if game.turn == Player::Human => (strings.your_turn.to_string(), Color::WHITE),
 		_ => (strings.bot_thinking.to_string(), MUTED),
 	};
@@ -305,7 +330,7 @@ fn player_hand<'a>(game: &'a Game, suggested: Option<Action>) -> Element<'a, Mes
 		.enumerate()
 		.map(|(index, &card)| {
 			let action = Action::Play(index);
-			let highlight = card.is_manilha(game.vira) || suggested == Some(action);
+			let highlight = game.is_manilha(card) || suggested == Some(action);
 			card_button(
 				card,
 				highlight,
@@ -326,7 +351,10 @@ fn event_log<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 			Event::HandWon { .. } | Event::MatchWon { .. } | Event::HandDrawn => Color::WHITE,
 			_ => MUTED,
 		};
-		text(language.event(event)).size(14).color(color).into()
+		text(language.event(event, game.variant))
+			.size(14)
+			.color(color)
+			.into()
 	});
 	container(
 		column![

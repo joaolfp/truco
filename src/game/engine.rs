@@ -1,12 +1,11 @@
-//! Truco Paulista rules engine for a one-versus-one match.
+//! Truco rules engine for a one-versus-one match (Paulista or Mineiro).
 
 use super::card::Card;
 use super::card::shuffled_deck;
+use super::variant::Variant;
 
 /// Points needed to win a match.
 pub const WINNING_SCORE: u8 = 12;
-/// Score at which the "mão de onze" rule kicks in.
-pub const ELEVEN: u8 = 11;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Player {
@@ -30,32 +29,23 @@ impl Player {
 	}
 }
 
-/// How many points the current hand is worth.
+/// A level of the raise ladder. Its point value depends on the [`Variant`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Stake {
-	One,
-	Three,
+	/// A hand nobody raised.
+	Base,
+	Truco,
 	Six,
 	Nine,
 	Twelve,
 }
 
 impl Stake {
-	pub fn value(self) -> u8 {
-		match self {
-			Stake::One => 1,
-			Stake::Three => 3,
-			Stake::Six => 6,
-			Stake::Nine => 9,
-			Stake::Twelve => 12,
-		}
-	}
-
 	/// The stake a raise would lead to, if any.
 	pub fn next(self) -> Option<Stake> {
 		match self {
-			Stake::One => Some(Stake::Three),
-			Stake::Three => Some(Stake::Six),
+			Stake::Base => Some(Stake::Truco),
+			Stake::Truco => Some(Stake::Six),
 			Stake::Six => Some(Stake::Nine),
 			Stake::Nine => Some(Stake::Twelve),
 			Stake::Twelve => None,
@@ -113,7 +103,7 @@ pub enum HandOutcome {
 /// Things that happened during the match, used to build the on-screen log.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
-	NewHand { starter: Player, vira: Card },
+	NewHand { starter: Player, vira: Option<Card> },
 	ElevenHand { player: Player },
 	IronHand,
 	Played { player: Player, card: Card },
@@ -139,10 +129,12 @@ pub enum ActionError {
 #[derive(Debug, Clone)]
 pub struct Game {
 	rng: fastrand::Rng,
+	pub variant: Variant,
 	pub scores: [u8; 2],
 	/// The player who leads the first trick of the current hand ("mão").
 	pub hand_starter: Player,
-	pub vira: Card,
+	/// The face-up card that defines the manilhas (Paulista only).
+	pub vira: Option<Card>,
 	pub hands: [Vec<Card>; 2],
 	pub tricks: Vec<TrickResult>,
 	/// Cards on the table for the trick in progress, in play order.
@@ -155,7 +147,7 @@ pub struct Game {
 	pub stake: Stake,
 	/// The last player who raised; they cannot raise again until the other does.
 	pub last_raiser: Option<Player>,
-	/// "Mão de onze" or "mão de ferro": raising is forbidden.
+	/// "Mão de onze/dez" or "mão de ferro": raising is forbidden.
 	pub eleven_hand: bool,
 	pub phase: Phase,
 	pub outcome: Option<HandOutcome>,
@@ -164,28 +156,29 @@ pub struct Game {
 }
 
 impl Game {
-	pub fn new() -> Self {
-		Self::with_rng(fastrand::Rng::new())
+	pub fn new(variant: Variant) -> Self {
+		Self::with_rng(fastrand::Rng::new(), variant)
 	}
 
 	#[cfg(any(test, feature = "screenshots"))]
-	pub fn with_seed(seed: u64) -> Self {
-		Self::with_rng(fastrand::Rng::with_seed(seed))
+	pub fn with_seed(seed: u64, variant: Variant) -> Self {
+		Self::with_rng(fastrand::Rng::with_seed(seed), variant)
 	}
 
-	fn with_rng(rng: fastrand::Rng) -> Self {
+	fn with_rng(rng: fastrand::Rng, variant: Variant) -> Self {
 		let mut game = Self {
 			rng,
+			variant,
 			scores: [0, 0],
 			hand_starter: Player::Human,
-			vira: super::card::full_deck()[0],
+			vira: None,
 			hands: [Vec::new(), Vec::new()],
 			tricks: Vec::new(),
 			table: Vec::new(),
 			last_trick: Vec::new(),
 			hand_plays: Vec::new(),
 			turn: Player::Human,
-			stake: Stake::One,
+			stake: Stake::Base,
 			last_raiser: None,
 			eleven_hand: false,
 			phase: Phase::Playing,
@@ -205,17 +198,31 @@ impl Game {
 		&self.hands[player.index()]
 	}
 
+	/// Strength of a card under the current variant and vira.
+	pub fn strength(&self, card: Card) -> u8 {
+		self.variant.strength(card, self.vira)
+	}
+
+	pub fn is_manilha(&self, card: Card) -> bool {
+		self.variant.is_manilha(card, self.vira)
+	}
+
+	/// Points a hand is worth at the given stake under the current variant.
+	pub fn stake_value(&self, stake: Stake) -> u8 {
+		self.variant.stake_value(stake)
+	}
+
 	fn start_hand(&mut self) {
 		let mut deck = shuffled_deck(&mut self.rng);
 		self.hands[0] = deck.drain(..3).collect();
 		self.hands[1] = deck.drain(..3).collect();
-		self.vira = deck[0];
+		self.vira = self.variant.uses_vira().then(|| deck[0]);
 		self.tricks.clear();
 		self.table.clear();
 		self.last_trick.clear();
 		self.hand_plays.clear();
 		self.turn = self.hand_starter;
-		self.stake = Stake::One;
+		self.stake = Stake::Base;
 		self.last_raiser = None;
 		self.outcome = None;
 		self.hand_number += 1;
@@ -224,8 +231,9 @@ impl Game {
 			vira: self.vira,
 		});
 
-		let human_eleven = self.score(Player::Human) == ELEVEN;
-		let bot_eleven = self.score(Player::Bot) == ELEVEN;
+		let special = self.variant.special_hand_score();
+		let human_eleven = self.score(Player::Human) == special;
+		let bot_eleven = self.score(Player::Bot) == special;
 		self.eleven_hand = human_eleven || bot_eleven;
 		self.phase = match (human_eleven, bot_eleven) {
 			(true, true) => {
@@ -364,19 +372,19 @@ impl Game {
 				self.events.push(Event::Folded { player });
 				self.finish_hand(HandOutcome::Won {
 					winner: player.opponent(),
-					points: self.stake.value(),
+					points: self.stake_value(self.stake),
 				});
 			}
 			(Phase::ElevenDecision { .. }, Action::Accept) => {
 				self.events.push(Event::ElevenAccepted { player });
-				self.stake = Stake::Three;
+				self.stake = Stake::Truco;
 				self.phase = Phase::Playing;
 			}
 			(Phase::ElevenDecision { .. }, Action::Fold) => {
 				self.events.push(Event::ElevenFolded { player });
 				self.finish_hand(HandOutcome::Won {
 					winner: player.opponent(),
-					points: 1,
+					points: self.stake_value(Stake::Base),
 				});
 			}
 			_ => return Err(ActionError::NotAllowed),
@@ -397,8 +405,8 @@ impl Game {
 
 		let (leader, lead_card) = self.table[0];
 		let (follower, follow_card) = self.table[1];
-		let lead_strength = lead_card.strength(self.vira);
-		let follow_strength = follow_card.strength(self.vira);
+		let lead_strength = self.strength(lead_card);
+		let follow_strength = self.strength(follow_card);
 		let result = match lead_strength.cmp(&follow_strength) {
 			std::cmp::Ordering::Greater => TrickResult::Won(leader),
 			std::cmp::Ordering::Less => TrickResult::Won(follower),
@@ -429,7 +437,7 @@ impl Game {
 			let outcome = match outcome {
 				HandOutcome::Won { winner, .. } => HandOutcome::Won {
 					winner,
-					points: self.stake.value(),
+					points: self.stake_value(self.stake),
 				},
 				HandOutcome::Draw => HandOutcome::Draw,
 			};
@@ -470,7 +478,7 @@ impl Game {
 
 impl Default for Game {
 	fn default() -> Self {
-		Self::new()
+		Self::new(Variant::default())
 	}
 }
 
@@ -537,9 +545,9 @@ mod tests {
 	}
 
 	fn rigged(human: [Card; 3], bot: [Card; 3], vira: Card) -> Game {
-		let mut game = Game::with_seed(1);
+		let mut game = Game::with_seed(1, Variant::Paulista);
 		game.hands = [human.to_vec(), bot.to_vec()];
-		game.vira = vira;
+		game.vira = Some(vira);
 		game
 	}
 
@@ -563,7 +571,7 @@ mod tests {
 		game.apply(Player::Human, Action::Raise).unwrap();
 		assert_eq!(game.actor(), Some(Player::Bot));
 		game.apply(Player::Bot, Action::Accept).unwrap();
-		assert_eq!(game.stake, Stake::Three);
+		assert_eq!(game.stake, Stake::Truco);
 		assert!(!game.is_legal(Player::Human, Action::Raise));
 
 		game.apply(Player::Human, Action::Play(0)).unwrap();
@@ -577,10 +585,10 @@ mod tests {
 
 	#[test]
 	fn folding_awards_previous_stake() {
-		let mut game = Game::with_seed(7);
+		let mut game = Game::with_seed(7, Variant::Paulista);
 		game.apply(Player::Human, Action::Raise).unwrap();
 		game.apply(Player::Bot, Action::Raise).unwrap();
-		assert_eq!(game.stake, Stake::Three);
+		assert_eq!(game.stake, Stake::Truco);
 		game.apply(Player::Human, Action::Fold).unwrap();
 		assert_eq!(game.score(Player::Bot), 3);
 		assert_eq!(game.phase, Phase::HandOver);
@@ -588,8 +596,8 @@ mod tests {
 
 	#[test]
 	fn eleven_hand_forbids_raising_and_fold_gives_one_point() {
-		let mut game = Game::with_seed(3);
-		game.scores = [ELEVEN, 4];
+		let mut game = Game::with_seed(3, Variant::Paulista);
+		game.scores = [11, 4];
 		game.phase = Phase::HandOver;
 		game.next_hand();
 		assert_eq!(
@@ -603,23 +611,46 @@ mod tests {
 	}
 
 	#[test]
+	fn mineiro_hand_of_ten() {
+		let mut game = Game::with_seed(5, Variant::Mineiro);
+		assert_eq!(game.vira, None);
+		assert_eq!(game.stake_value(game.stake), 2);
+		game.scores = [4, 10];
+		game.phase = Phase::HandOver;
+		game.next_hand();
+		assert_eq!(
+			game.phase,
+			Phase::ElevenDecision {
+				player: Player::Bot
+			}
+		);
+		game.apply(Player::Bot, Action::Fold).unwrap();
+		assert_eq!(game.score(Player::Human), 6);
+	}
+
+	#[test]
 	fn random_games_always_finish() {
-		for seed in 0..200 {
-			let mut game = Game::with_seed(seed);
-			let mut rng = fastrand::Rng::with_seed(seed);
-			for _ in 0..10_000 {
-				match game.phase {
-					Phase::MatchOver { .. } => break,
-					Phase::HandOver => game.next_hand(),
-					_ => {
-						let actor = game.actor().unwrap();
-						let actions = game.legal_actions(actor);
-						let action = actions[rng.usize(..actions.len())];
-						game.apply(actor, action).unwrap();
+		for variant in Variant::ALL {
+			for seed in 0..200 {
+				let mut game = Game::with_seed(seed, variant);
+				let mut rng = fastrand::Rng::with_seed(seed);
+				for _ in 0..10_000 {
+					match game.phase {
+						Phase::MatchOver { .. } => break,
+						Phase::HandOver => game.next_hand(),
+						_ => {
+							let actor = game.actor().unwrap();
+							let actions = game.legal_actions(actor);
+							let action = actions[rng.usize(..actions.len())];
+							game.apply(actor, action).unwrap();
+						}
 					}
 				}
+				assert!(
+					matches!(game.phase, Phase::MatchOver { .. }),
+					"{variant:?} seed {seed}"
+				);
 			}
-			assert!(matches!(game.phase, Phase::MatchOver { .. }), "seed {seed}");
 		}
 	}
 }

@@ -23,6 +23,7 @@ use crate::bot;
 use crate::game::Action;
 use crate::game::Game;
 use crate::game::Player;
+use crate::game::Variant;
 use crate::i18n::Language;
 
 /// Delay between bot moves so the player can follow what happens.
@@ -42,6 +43,7 @@ pub enum Message {
 	OpenTutorial,
 	ContinueGame,
 	NewGame,
+	SetVariant(Variant),
 	TutorialPrevious,
 	TutorialNext,
 	QuizAnswer(usize),
@@ -57,6 +59,8 @@ pub struct App {
 	language: Language,
 	screen: Screen,
 	game: Option<Game>,
+	/// Rules used when a new match starts.
+	variant: Variant,
 	hints: bool,
 	tutorial_step: usize,
 	quiz_answer: Option<usize>,
@@ -71,6 +75,7 @@ impl Default for App {
 			language: Language::default(),
 			screen: Screen::Menu,
 			game: None,
+			variant: Variant::default(),
 			hints: false,
 			tutorial_step: 0,
 			quiz_answer: None,
@@ -133,8 +138,9 @@ impl App {
 					self.screen = Screen::Game;
 				}
 			}
+			Message::SetVariant(variant) => self.variant = variant,
 			Message::NewGame => {
-				self.game = Some(Game::new());
+				self.game = Some(Game::new(self.variant));
 				self.screen = Screen::Game;
 			}
 			Message::TutorialPrevious => {
@@ -184,11 +190,11 @@ impl App {
 
 	pub fn view(&self) -> Element<'_, Message> {
 		let content = match self.screen {
-			Screen::Menu => menu::view(self.language, self.game.is_some()),
+			Screen::Menu => menu::view(self.language, self.variant, self.game.is_some()),
 			Screen::Tutorial => tutorial::view(self.language, self.tutorial_step, self.quiz_answer),
 			Screen::Game => match &self.game {
 				Some(game) => table::view(game, self.language, self.hints),
-				None => menu::view(self.language, false),
+				None => menu::view(self.language, self.variant, false),
 			},
 		};
 		let background = canvas(scene::Wall).width(Fill).height(Fill);

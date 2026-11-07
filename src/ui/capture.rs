@@ -19,18 +19,20 @@ use crate::bot;
 use crate::game::Game;
 use crate::game::Phase;
 use crate::game::Player;
+use crate::game::Variant;
 use crate::i18n::Language;
 
 /// Time given to the window to render a scene before capturing it.
 const SETTLE: Duration = Duration::from_millis(800);
 
-const SCENES: [&str; 6] = [
+const SCENES: [&str; 7] = [
 	"menu",
 	"tutorial-manilhas",
 	"tutorial-quiz",
 	"game-hints",
 	"game-truco",
 	"game-english",
+	"game-mineiro",
 ];
 
 #[derive(Debug, Clone)]
@@ -96,7 +98,7 @@ fn setup(app: &mut App, scene: usize) {
 		3 => {
 			app.screen = Screen::Game;
 			app.hints = true;
-			app.game = Some(find_game(|game| {
+			app.game = Some(find_game(Variant::Paulista, |game| {
 				game.phase == Phase::Playing
 					&& game.turn == Player::Human
 					&& game.table.len() == 1
@@ -104,7 +106,7 @@ fn setup(app: &mut App, scene: usize) {
 			}));
 		}
 		4 => {
-			app.game = Some(find_game(|game| {
+			app.game = Some(find_game(Variant::Paulista, |game| {
 				matches!(
 					game.phase,
 					Phase::AwaitingResponse {
@@ -114,22 +116,32 @@ fn setup(app: &mut App, scene: usize) {
 				)
 			}));
 		}
-		_ => {
+		5 => {
 			app.language = Language::English;
-			app.game = Some(find_game(|game| {
+			app.game = Some(find_game(Variant::Paulista, |game| {
 				game.phase == Phase::Playing
 					&& game.turn == Player::Human
 					&& game.table.len() == 1
 					&& game.tricks.is_empty()
 			}));
 		}
+		_ => {
+			app.language = Language::PortugueseBr;
+			app.variant = Variant::Mineiro;
+			app.game = Some(find_game(Variant::Mineiro, |game| {
+				game.phase == Phase::Playing
+					&& game.turn == Player::Human
+					&& game.table.len() == 1
+					&& game.tricks.len() == 1
+			}));
+		}
 	}
 }
 
 /// Plays deterministic games until one reaches a state matching `wanted`.
-fn find_game(wanted: impl Fn(&Game) -> bool) -> Game {
+fn find_game(variant: Variant, wanted: impl Fn(&Game) -> bool) -> Game {
 	for seed in 0..10_000 {
-		let mut game = Game::with_seed(seed);
+		let mut game = Game::with_seed(seed, variant);
 		// Show a match in progress rather than a 0 x 0 scoreboard.
 		game.scores = [5, 7];
 		for _ in 0..12 {
@@ -145,7 +157,7 @@ fn find_game(wanted: impl Fn(&Game) -> bool) -> Game {
 			}
 		}
 	}
-	Game::new()
+	Game::new(variant)
 }
 
 fn output_dir() -> PathBuf {

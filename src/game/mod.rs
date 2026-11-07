@@ -2,6 +2,7 @@
 
 pub mod card;
 pub mod engine;
+pub mod variant;
 
 pub use card::Card;
 pub use card::Rank;
@@ -13,3 +14,5 @@ pub use engine::Phase;
 pub use engine::Player;
 pub use engine::Stake;
 pub use engine::TrickResult;
+pub use variant::MINEIRO_MANILHAS;
+pub use variant::Variant;
