@@ -23,12 +23,21 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
   - Raising: **Truco → Six → Nine → Twelve**. Accept, run or raise back.
   - *Mão de onze* (hand of eleven) and *mão de ferro* (iron hand)
   - First to 12 points wins
-- **Bot opponent** that plays its cards efficiently, judges when to call or accept truco, and bluffs now and then
+- **Four fictional opponents**, picked before each match:
+
+  | Opponent | Level | How they play |
+  | --- | --- | --- |
+  | Tonho | ★☆☆☆ Beginner | Often plays a random card, misjudges his hand, never bluffs |
+  | Dona Cida | ★★☆☆ Amateur | Knows the basics but misreads hands and rarely bluffs |
+  | Seu Chico | ★★★☆ Professional | Textbook play: beats cheaply, saves strong cards, bluffs sometimes |
+  | Bigode | ★★★★ Master | Before every decision, simulates hundreds of possible deals using only the cards he hasn't seen (no cheating) and picks the move with the best expected points |
 - **Hints**: turn them on to get a suggested move and an explanation of why it is a good one
 - **Step-by-step tutorial** with illustrated cards and quick quizzes
 - **Two languages**: Português (BR) and English
 
 ## Screenshots
+
+![Choose your opponent](docs/screenshots/opponents.png)
 
 | Playing with hints | The bot calls truco |
 | --- | --- |
@@ -84,8 +93,9 @@ The in-app tutorial explains all of this in detail, including ties, the hand of 
 ```
 src/
 ├── main.rs          # app entry point
-├── bot.rs           # heuristic opponent (also powers the hints)
+├── bot.rs           # opponent AI per difficulty (the heuristic also powers hints)
 ├── i18n.rs          # Portuguese and English text
+├── opponents.rs     # the four fictional opponents and their difficulty
 ├── game/
 │   ├── card.rs      # suits, ranks, cards, deck, strength with the vira
 │   ├── engine.rs    # match state machine: tricks, raises, scoring
@@ -93,6 +103,7 @@ src/
 └── ui/
     ├── mod.rs       # iced application: state, messages, update
     ├── menu.rs      # main menu
+    ├── opponents.rs # opponent selection screen
     ├── table.rs     # game screen
     ├── tutorial.rs  # step-by-step tutorial and quizzes
     ├── scene.rs     # canvas art: bar wall, round table, card pile, props

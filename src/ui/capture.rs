@@ -21,12 +21,15 @@ use crate::game::Phase;
 use crate::game::Player;
 use crate::game::Variant;
 use crate::i18n::Language;
+use crate::opponents::Difficulty;
+use crate::opponents::Opponent;
 
 /// Time given to the window to render a scene before capturing it.
 const SETTLE: Duration = Duration::from_millis(800);
 
-const SCENES: [&str; 7] = [
+const SCENES: [&str; 8] = [
 	"menu",
+	"opponents",
 	"tutorial-manilhas",
 	"tutorial-quiz",
 	"game-hints",
@@ -87,17 +90,21 @@ fn setup(app: &mut App, scene: usize) {
 			app.screen = Screen::Menu;
 		}
 		1 => {
+			app.screen = Screen::Opponents;
+		}
+		2 => {
 			app.screen = Screen::Tutorial;
 			app.tutorial_step = 3;
 			app.quiz_answer = None;
 		}
-		2 => {
+		3 => {
 			app.tutorial_step = 5;
 			app.quiz_answer = Some(1);
 		}
-		3 => {
+		4 => {
 			app.screen = Screen::Game;
 			app.hints = true;
+			app.opponent = Opponent::for_difficulty(Difficulty::Professional);
 			app.game = Some(find_game(Variant::Paulista, |game| {
 				game.phase == Phase::Playing
 					&& game.turn == Player::Human
@@ -105,7 +112,7 @@ fn setup(app: &mut App, scene: usize) {
 					&& game.tricks.len() == 1
 			}));
 		}
-		4 => {
+		5 => {
 			app.game = Some(find_game(Variant::Paulista, |game| {
 				matches!(
 					game.phase,
@@ -116,7 +123,7 @@ fn setup(app: &mut App, scene: usize) {
 				)
 			}));
 		}
-		5 => {
+		6 => {
 			app.language = Language::English;
 			app.game = Some(find_game(Variant::Paulista, |game| {
 				game.phase == Phase::Playing
@@ -128,6 +135,7 @@ fn setup(app: &mut App, scene: usize) {
 		_ => {
 			app.language = Language::PortugueseBr;
 			app.variant = Variant::Mineiro;
+			app.opponent = Opponent::for_difficulty(Difficulty::Master);
 			app.game = Some(find_game(Variant::Mineiro, |game| {
 				game.phase == Phase::Playing
 					&& game.turn == Player::Human

@@ -17,6 +17,7 @@ use iced::widget::space;
 use iced::widget::text;
 
 use crate::game::Card;
+use crate::opponents::Opponent;
 
 pub const GOLD: Color = Color::from_rgb(0.98, 0.78, 0.20);
 pub const RED_SUIT: Color = Color::from_rgb(0.78, 0.13, 0.13);
@@ -199,4 +200,30 @@ pub fn card_button<'a, M: Clone + 'a>(
 			}
 		})
 		.into()
+}
+
+/// A round portrait with the opponent's initials.
+pub fn avatar<'a, M: 'a>(opponent: &Opponent, size: f32) -> Element<'a, M> {
+	let color = opponent.color;
+	container(
+		text(opponent.initials)
+			.font(BOLD)
+			.size(size * 0.4)
+			.color(Color::WHITE),
+	)
+	.center(size)
+	.style(move |_| container::Style {
+		background: Some(Background::Color(color)),
+		border: Border::default()
+			.rounded(size / 2.0)
+			.width(3)
+			.color(Color::WHITE),
+		shadow: Shadow {
+			color: Color::from_rgba(0.0, 0.0, 0.0, 0.45),
+			offset: Vector::new(0.0, 2.0),
+			blur_radius: 6.0,
+		},
+		..container::Style::default()
+	})
+	.into()
 }

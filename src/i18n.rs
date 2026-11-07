@@ -10,6 +10,7 @@ use crate::game::Phase;
 use crate::game::Player;
 use crate::game::Stake;
 use crate::game::Variant;
+use crate::opponents::Difficulty;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Language {
@@ -90,17 +91,17 @@ impl Language {
 		}
 	}
 
-	pub fn special_hand_prompt(self, variant: Variant) -> String {
+	pub fn special_hand_prompt(self, variant: Variant, opp: &str) -> String {
 		let name = capitalize(self.special_hand(variant));
 		let score = variant.special_hand_score();
 		let play = self.points(variant.stake_value(Stake::Truco));
 		let run = self.points(variant.stake_value(Stake::Base));
 		match self {
 			Language::PortugueseBr => {
-				format!("{name}! Você tem {score} pontos. Jogar vale {play}; correr dá {run} ao bot.")
+				format!("{name}! Você tem {score} pontos. Jogar vale {play}; correr dá {run} para {opp}.")
 			}
 			Language::English => format!(
-				"{name}! You have {score} points. Playing is worth {play}; running gives the bot {run}."
+				"{name}! You have {score} points. Playing is worth {play}; running gives {opp} {run}."
 			),
 		}
 	}
@@ -112,18 +113,62 @@ impl Language {
 		}
 	}
 
-	pub fn bot_raised(self, stake: Stake, variant: Variant) -> String {
+	pub fn bot_raised(self, stake: Stake, variant: Variant, opp: &str) -> String {
 		match self {
 			Language::PortugueseBr => format!(
-				"O bot pediu {}! Aceitar faz a mão valer {}.",
+				"{opp} pediu {}! Aceitar faz a mão valer {}.",
 				self.raise_name(stake).to_uppercase(),
 				self.points(variant.stake_value(stake))
 			),
 			Language::English => format!(
-				"The bot called {}! Accepting makes the hand worth {}.",
+				"{opp} called {}! Accepting makes the hand worth {}.",
 				self.raise_name(stake).to_uppercase(),
 				self.points(variant.stake_value(stake))
 			),
+		}
+	}
+
+	pub fn difficulty_name(self, difficulty: Difficulty) -> &'static str {
+		match difficulty {
+			Difficulty::Beginner => self.pick("Iniciante", "Beginner"),
+			Difficulty::Amateur => self.pick("Amador", "Amateur"),
+			Difficulty::Professional => self.pick("Profissional", "Professional"),
+			Difficulty::Master => self.pick("Mestre", "Master"),
+		}
+	}
+
+	pub fn opponent_bio(self, difficulty: Difficulty) -> &'static str {
+		match difficulty {
+			Difficulty::Beginner => self.pick(
+				"Aprendeu a jogar ontem, no churrasco da firma. Joga qualquer carta e quase nunca pede truco.",
+				"Learned to play yesterday at the office barbecue. Throws any card and hardly ever calls truco.",
+			),
+			Difficulty::Amateur => self.pick(
+				"Joga todo domingo na praça. Conhece as regras, mas ainda se atrapalha e cai em blefe.",
+				"Plays every Sunday at the square. Knows the rules but still slips up and falls for bluffs.",
+			),
+			Difficulty::Professional => self.pick(
+				"Campeão do boteco do bairro. Joga certinho, guarda as cartas fortes e blefa quando dá.",
+				"Champion of the neighborhood bar. Plays by the book, saves strong cards and bluffs when he can.",
+			),
+			Difficulty::Master => self.pick(
+				"Lenda viva do truco. Calcula cada jogada, sabe a hora de correr e ninguém sabe quando ele blefa.",
+				"A living truco legend. Calculates every move, knows when to run, and nobody can tell when he bluffs.",
+			),
+		}
+	}
+
+	pub fn thinking(self, opp: &str) -> String {
+		match self {
+			Language::PortugueseBr => format!("{opp} está pensando..."),
+			Language::English => format!("{opp} is thinking..."),
+		}
+	}
+
+	pub fn opponent_won_match(self, opp: &str) -> String {
+		match self {
+			Language::PortugueseBr => format!("{opp} venceu. Tente de novo!"),
+			Language::English => format!("{opp} won. Try again!"),
 		}
 	}
 
@@ -131,7 +176,7 @@ impl Language {
 		format!("{}!", self.raise_name(stake).to_uppercase())
 	}
 
-	pub fn event(self, event: &Event, variant: Variant) -> String {
+	pub fn event(self, event: &Event, variant: Variant, opp: &str) -> String {
 		let pt = self == Language::PortugueseBr;
 		let special = self.special_hand(variant);
 		let special_value = self.points(variant.stake_value(Stake::Truco));
@@ -145,18 +190,18 @@ impl Language {
 				let vira = vira.unwrap_or_default();
 				match (pt, human(starter)) {
 					(true, true) => format!("Nova mão!{vira} Você começa."),
-					(true, false) => format!("Nova mão!{vira} O bot começa."),
+					(true, false) => format!("Nova mão!{vira} {opp} começa."),
 					(false, true) => format!("New hand!{vira} You lead."),
-					(false, false) => format!("New hand!{vira} The bot leads."),
+					(false, false) => format!("New hand!{vira} {opp} leads."),
 				}
 			}
 			Event::ElevenHand { player } => {
 				let name = capitalize(special);
 				match (pt, human(player)) {
 					(true, true) => format!("{name}! Veja suas cartas e decida se joga."),
-					(true, false) => format!("{name} do bot: ele decide se joga."),
+					(true, false) => format!("{opp} está na {special}: decide se joga."),
 					(false, true) => format!("{name}! Look at your cards and decide whether to play."),
-					(false, false) => format!("The bot has a {special}: it decides whether to play."),
+					(false, false) => format!("{opp} has a {special}: deciding whether to play."),
 				}
 			}
 			Event::IronHand => {
@@ -173,60 +218,60 @@ impl Language {
 			}
 			Event::Played { player, card } => match (pt, human(player)) {
 				(true, true) => format!("Você jogou {card}."),
-				(true, false) => format!("O bot jogou {card}."),
+				(true, false) => format!("{opp} jogou {card}."),
 				(false, true) => format!("You played {card}."),
-				(false, false) => format!("The bot played {card}."),
+				(false, false) => format!("{opp} played {card}."),
 			},
 			Event::TrickWon { player, card } => match (pt, human(player)) {
 				(true, true) => format!("Você ganhou a rodada com {card}."),
-				(true, false) => format!("O bot ganhou a rodada com {card}."),
+				(true, false) => format!("{opp} ganhou a rodada com {card}."),
 				(false, true) => format!("You won the round with {card}."),
-				(false, false) => format!("The bot won the round with {card}."),
+				(false, false) => format!("{opp} won the round with {card}."),
 			},
 			Event::TrickTied => self.pick("Rodada empatada (cangou)!", "Round tied!").into(),
 			Event::Raised { player, stake } => {
 				let call = self.raise_name(*stake).to_uppercase();
 				match (pt, human(player)) {
 					(true, true) => format!("Você pediu {call}!"),
-					(true, false) => format!("O bot pediu {call}!"),
+					(true, false) => format!("{opp} pediu {call}!"),
 					(false, true) => format!("You called {call}!"),
-					(false, false) => format!("The bot called {call}!"),
+					(false, false) => format!("{opp} called {call}!"),
 				}
 			}
 			Event::Accepted { player, stake } => {
 				let points = self.points(variant.stake_value(*stake));
 				match (pt, human(player)) {
 					(true, true) => format!("Você aceitou. A mão vale {points}."),
-					(true, false) => format!("O bot aceitou. A mão vale {points}."),
+					(true, false) => format!("{opp} aceitou. A mão vale {points}."),
 					(false, true) => format!("You accepted. The hand is worth {points}."),
-					(false, false) => format!("The bot accepted. The hand is worth {points}."),
+					(false, false) => format!("{opp} accepted. The hand is worth {points}."),
 				}
 			}
 			Event::Folded { player } => match (pt, human(player)) {
 				(true, true) => "Você correu.".into(),
-				(true, false) => "O bot correu!".into(),
+				(true, false) => format!("{opp} correu!"),
 				(false, true) => "You ran.".into(),
-				(false, false) => "The bot ran!".into(),
+				(false, false) => format!("{opp} ran!"),
 			},
 			Event::ElevenAccepted { player } => match (pt, human(player)) {
 				(true, true) => format!("Você vai jogar a {special} (vale {special_value})."),
-				(true, false) => format!("O bot vai jogar a {special} (vale {special_value})."),
+				(true, false) => format!("{opp} vai jogar a {special} (vale {special_value})."),
 				(false, true) => format!("You'll play the {special} (worth {special_value})."),
-				(false, false) => format!("The bot will play the {special} (worth {special_value})."),
+				(false, false) => format!("{opp} will play the {special} (worth {special_value})."),
 			},
 			Event::ElevenFolded { player } => match (pt, human(player)) {
 				(true, true) => format!("Você correu da {special}."),
-				(true, false) => format!("O bot correu da {special}."),
+				(true, false) => format!("{opp} correu da {special}."),
 				(false, true) => format!("You ran from the {special}."),
-				(false, false) => format!("The bot ran from the {special}."),
+				(false, false) => format!("{opp} ran from the {special}."),
 			},
 			Event::HandWon { player, points } => {
 				let points = self.points(*points);
 				match (pt, human(player)) {
 					(true, true) => format!("Você ganhou {points}!"),
-					(true, false) => format!("O bot ganhou {points}."),
+					(true, false) => format!("{opp} ganhou {points}."),
 					(false, true) => format!("You won {points}!"),
-					(false, false) => format!("The bot won {points}."),
+					(false, false) => format!("{opp} won {points}."),
 				}
 			}
 			Event::HandDrawn => self
@@ -237,9 +282,9 @@ impl Language {
 				.into(),
 			Event::MatchWon { player } => match (pt, human(player)) {
 				(true, true) => "Você venceu a partida!".into(),
-				(true, false) => "O bot venceu a partida.".into(),
+				(true, false) => format!("{opp} venceu a partida."),
 				(false, true) => "You won the match!".into(),
-				(false, false) => "The bot won the match.".into(),
+				(false, false) => format!("{opp} won the match."),
 			},
 		}
 	}
@@ -365,16 +410,17 @@ pub struct Strings {
 	pub hints: &'static str,
 	pub hint: &'static str,
 	pub your_turn: &'static str,
-	pub bot_thinking: &'static str,
 	pub accept: &'static str,
 	pub run: &'static str,
 	pub play_eleven: &'static str,
 	pub game_mode: &'static str,
+	pub choose_opponent: &'static str,
+	pub challenge: &'static str,
+	pub back: &'static str,
 	pub manilhas: &'static str,
 	pub next_hand: &'static str,
 	pub new_match: &'static str,
 	pub you_won_match: &'static str,
-	pub bot_won_match: &'static str,
 	pub previous: &'static str,
 	pub next: &'static str,
 	pub start_playing: &'static str,
@@ -403,16 +449,17 @@ pub static PT_BR: Strings = Strings {
 	hints: "Dicas",
 	hint: "Dica",
 	your_turn: "Sua vez! Escolha uma carta para jogar.",
-	bot_thinking: "O bot está pensando...",
 	accept: "Aceitar",
 	run: "Correr",
 	play_eleven: "Jogar a mão",
 	game_mode: "Modo de jogo",
+	choose_opponent: "Escolha seu adversário",
+	challenge: "Desafiar",
+	back: "Voltar",
 	manilhas: "Manilhas",
 	next_hand: "Próxima mão",
 	new_match: "Nova partida",
 	you_won_match: "Parabéns, você venceu!",
-	bot_won_match: "O bot venceu. Tente de novo!",
 	previous: "Anterior",
 	next: "Próximo",
 	start_playing: "Jogar agora",
@@ -478,7 +525,7 @@ pub static PT_BR: Strings = Strings {
 		},
 		TutorialStep {
 			title: "Pronto para jogar!",
-			body: "Na partida, clique numa carta para jogá-la. Use os botões para pedir truco, aceitar ou correr.\n\nLigue as Dicas no topo da tela: elas sugerem uma jogada e explicam o porquê. Blefar faz parte do jogo, e o bot também blefa de vez em quando. Boa sorte!",
+			body: "Na partida, clique numa carta para jogá-la. Use os botões para pedir truco, aceitar ou correr.\n\nLigue as Dicas no topo da tela: elas sugerem uma jogada e explicam o porquê. Blefar faz parte do jogo, e os adversários também blefam de vez em quando. Boa sorte!",
 		},
 	],
 };
@@ -499,16 +546,17 @@ pub static EN: Strings = Strings {
 	hints: "Hints",
 	hint: "Hint",
 	your_turn: "Your turn! Pick a card to play.",
-	bot_thinking: "The bot is thinking...",
 	accept: "Accept",
 	run: "Run",
 	play_eleven: "Play the hand",
 	game_mode: "Game mode",
+	choose_opponent: "Choose your opponent",
+	challenge: "Challenge",
+	back: "Back",
 	manilhas: "Manilhas",
 	next_hand: "Next hand",
 	new_match: "New match",
 	you_won_match: "Congratulations, you won!",
-	bot_won_match: "The bot won. Try again!",
 	previous: "Previous",
 	next: "Next",
 	start_playing: "Play now",
@@ -569,7 +617,7 @@ pub static EN: Strings = Strings {
 		},
 		TutorialStep {
 			title: "Ready to play!",
-			body: "During the match, click a card to play it. Use the buttons to call truco, accept or run.\n\nTurn on Hints at the top of the screen: they suggest a move and explain why. Bluffing is part of the game, and the bot bluffs now and then too. Good luck!",
+			body: "During the match, click a card to play it. Use the buttons to call truco, accept or run.\n\nTurn on Hints at the top of the screen: they suggest a move and explain why. Bluffing is part of the game, and your opponents bluff now and then too. Good luck!",
 		},
 	],
 };

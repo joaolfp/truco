@@ -3,6 +3,7 @@
 #[cfg(feature = "screenshots")]
 mod capture;
 mod menu;
+mod opponents;
 mod scene;
 mod table;
 mod tutorial;
@@ -25,6 +26,8 @@ use crate::game::Game;
 use crate::game::Player;
 use crate::game::Variant;
 use crate::i18n::Language;
+use crate::opponents::Difficulty;
+use crate::opponents::Opponent;
 
 /// Delay between bot moves so the player can follow what happens.
 const BOT_DELAY: Duration = Duration::from_millis(900);
@@ -33,6 +36,7 @@ const BOT_DELAY: Duration = Duration::from_millis(900);
 pub enum Screen {
 	Menu,
 	Tutorial,
+	Opponents,
 	Game,
 }
 
@@ -42,7 +46,9 @@ pub enum Message {
 	OpenMenu,
 	OpenTutorial,
 	ContinueGame,
+	/// Go to the opponent selection before a new match.
 	NewGame,
+	Challenge(Difficulty),
 	SetVariant(Variant),
 	TutorialPrevious,
 	TutorialNext,
@@ -61,6 +67,8 @@ pub struct App {
 	game: Option<Game>,
 	/// Rules used when a new match starts.
 	variant: Variant,
+	/// Who the player is facing in the current match.
+	opponent: Opponent,
 	hints: bool,
 	tutorial_step: usize,
 	quiz_answer: Option<usize>,
@@ -76,6 +84,7 @@ impl Default for App {
 			screen: Screen::Menu,
 			game: None,
 			variant: Variant::default(),
+			opponent: Opponent::for_difficulty(Difficulty::default()),
 			hints: false,
 			tutorial_step: 0,
 			quiz_answer: None,
@@ -105,6 +114,7 @@ impl App {
 		match self.screen {
 			Screen::Menu => "Truco".into(),
 			Screen::Tutorial => format!("Truco — {}", self.language.strings().tutorial),
+			Screen::Opponents => format!("Truco — {}", self.language.strings().choose_opponent),
 			Screen::Game => {
 				let Some(game) = &self.game else {
 					return "Truco".into();
@@ -114,7 +124,7 @@ impl App {
 					self.language.strings().you,
 					game.score(Player::Human),
 					game.score(Player::Bot),
-					self.language.strings().bot
+					self.opponent.name
 				)
 			}
 		}
@@ -139,7 +149,9 @@ impl App {
 				}
 			}
 			Message::SetVariant(variant) => self.variant = variant,
-			Message::NewGame => {
+			Message::NewGame => self.screen = Screen::Opponents,
+			Message::Challenge(difficulty) => {
+				self.opponent = Opponent::for_difficulty(difficulty);
 				self.game = Some(Game::new(self.variant));
 				self.screen = Screen::Game;
 			}
@@ -166,7 +178,8 @@ impl App {
 			}
 			Message::BotTick => {
 				if let Some(game) = &mut self.game
-					&& let Some(decision) = bot::decide(game, Player::Bot, Some(&mut self.rng))
+					&& let Some(decision) =
+						bot::decide_as(self.opponent.difficulty, game, Player::Bot, &mut self.rng)
 				{
 					let _ = game.apply(Player::Bot, decision.action);
 				}
@@ -192,8 +205,9 @@ impl App {
 		let content = match self.screen {
 			Screen::Menu => menu::view(self.language, self.variant, self.game.is_some()),
 			Screen::Tutorial => tutorial::view(self.language, self.tutorial_step, self.quiz_answer),
+			Screen::Opponents => opponents::view(self.language, self.variant),
 			Screen::Game => match &self.game {
-				Some(game) => table::view(game, self.language, self.hints),
+				Some(game) => table::view(game, self.opponent, self.language, self.hints),
 				None => menu::view(self.language, self.variant, false),
 			},
 		};
