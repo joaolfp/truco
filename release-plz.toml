@@ -1,0 +1,39 @@
+# Release automation: https://release-plz.dev/docs/config
+#
+# On every push to main, release-plz opens (or updates) a release PR that
+# bumps the version in Cargo.toml/Cargo.lock and updates CHANGELOG.md from
+# the conventional commits. Merging that PR creates the git tag (vX.Y.Z)
+# and the GitHub release.
+
+[workspace]
+# The game is not published to crates.io: versions come from git tags.
+git_only = true
+# Only tag/release when the merged commit comes from a release PR.
+release_always = false
+git_tag_enable = true
+git_release_enable = true
+changelog_update = true
+pr_labels = ["release"]
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project are documented here.
+"""
+protect_breaking_commits = true
+sort_commits = "newest"
+commit_parsers = [
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^doc", group = "Documentation" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactor" },
+  { message = "^style", group = "Styling" },
+  { message = "^test", group = "Testing" },
+  { message = "^chore\\(deps\\)", group = "Dependency Updates" },
+  { message = "^revert", group = "Revert" },
+  { message = "^chore: release", skip = true },
+  { message = "^ci", skip = true },
+  { message = "^chore", skip = true },
+]
