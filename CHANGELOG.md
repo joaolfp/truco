@@ -11,5 +11,3 @@ All notable changes to this project are documented here.
 - round bar table with stacked card pile
 - add truco game with bot, tutorial and i18n
 - initial commit
-# Changelog
-
