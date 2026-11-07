@@ -1,0 +1,27 @@
+[tasks.lint]
+run = "cargo clippy --all-targets --all-features"
+
+[tasks.release]
+run = "cargo build --release"
+
+[tasks.build]
+run = "cargo build"
+
+[tasks.cli]
+run = "cargo run"
+
+[tasks.test]
+run = "cargo test"
+
+[tasks.check]
+run = "cargo check"
+
+[tasks.doc]
+run = "cargo doc --no-deps"
+
+[tasks.fmt]
+run = "cargo fmt --all -- --check"
+
+[tasks.changelog]
+run = "git cliff -o CHANGELOG.md"
+
