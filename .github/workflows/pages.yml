@@ -1,0 +1,56 @@
+name: Publish site
+
+# Publishes the landing page (web/) to GitHub Pages:
+# https://joaolfp.github.io/truco/
+#
+# - Called by release-plz.yml after each release, once the installers are
+#   attached, so the site and its download links go live together.
+# - Manually from the Actions tab.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        with:
+          persist-credentials: false
+
+      # The page loads screenshots from ../docs/screenshots/ so it also works
+      # when opened straight from the repository. The site gets its own copy.
+      - name: Build site
+        run: |
+          mkdir -p _site/screenshots
+          cp -R web/. _site/
+          cp docs/screenshots/*.png _site/screenshots/
+          sed -i 's#\.\./docs/screenshots/#screenshots/#g' _site/index.html
+          if grep -q '\.\./' _site/index.html; then
+            echo "::error::index.html still references files outside web/"
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

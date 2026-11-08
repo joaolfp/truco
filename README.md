@@ -2,6 +2,8 @@
 
 A desktop **Truco** card game written in Rust with [iced](https://iced.rs). Play one-on-one against a bot in **Truco Paulista** or **Truco Mineiro**, at a round table in a Brazilian *boteco*, and learn the rules with a step-by-step interactive tutorial.
 
+**Website and downloads: https://joaolfp.github.io/truco/**
+
 The app ships in **Brazilian Portuguese** by default and can be switched to **English** at any time.
 
 ![Main menu](docs/screenshots/menu.png)
