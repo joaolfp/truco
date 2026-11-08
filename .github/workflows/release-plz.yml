@@ -37,6 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      releases_created: ${{ steps.release-plz.outputs.releases_created }}
+      tag: ${{ steps.release-plz.outputs.releases_created == 'true' && fromJSON(steps.release-plz.outputs.releases)[0].tag || '' }}
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
@@ -44,8 +47,21 @@ jobs:
           persist-credentials: false
 
       - name: Run release-plz
+        id: release-plz
         uses: release-plz/action@66b324fd6c72d05d2a08568492ecdd62bfb8a62b # v0.5.148
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+
+  # Builds the Windows, macOS and Linux installers and attaches them to the
+  # release that was just created.
+  installers:
+    name: Installers
+    needs: release
+    if: needs.release.outputs.releases_created == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build-installers.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}

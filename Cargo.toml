@@ -2,12 +2,40 @@
 name = "truco"
 version = "0.1.0"
 edition = "2024"
+description = "Truco Paulista and Truco Mineiro card game against bots"
+homepage = "https://github.com/joaolfp/truco"
+repository = "https://github.com/joaolfp/truco"
 
 [dependencies]
 fastrand = "2.5.0"
 iced = { version = "0.14", features = ["canvas", "tokio"] }
-png = { version = "0.18.1", optional = true }
+png = "0.18.1"
+
+[build-dependencies]
+winresource = "0.1.34"
 
 [features]
 # Runs an automated tour that saves screenshots to docs/screenshots/.
-screenshots = ["dep:png"]
+screenshots = []
+
+# Installers for Windows (.exe), macOS (.dmg) and Linux (.AppImage, .deb),
+# built by .github/workflows/build-installers.yml. Locally:
+#   cargo install cargo-packager --locked
+#   cargo build --release && cargo packager --release
+[package.metadata.packager]
+product-name = "Truco"
+identifier = "io.github.joaolfp.truco"
+publisher = "joaolfp"
+category = "CardGame"
+description = "Truco Paulista e Truco Mineiro contra bots, com tutorial interativo."
+icons = ["assets/icon.icns", "assets/icon.ico", "assets/icon-*.png"]
+
+[package.metadata.packager.macos]
+minimum-system-version = "11.0"
+# Ad-hoc signature: no Apple Developer account needed.
+signing-identity = "-"
+
+[package.metadata.packager.nsis]
+installer-mode = "currentUser"
+languages = ["PortugueseBR", "English"]
+display-language-selector = true
