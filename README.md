@@ -51,11 +51,24 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
 | --- | --- |
 | ![Truco Mineiro](docs/screenshots/game-mineiro.png) | ![Game in English](docs/screenshots/game-english.png) |
 
-## Getting started
+## Download
+
+Grab the installer for your system from the [latest release](https://github.com/joaolfp/truco/releases/latest). No terminal needed:
+
+| System | File |
+| --- | --- |
+| Windows 10/11 | [`Truco-Windows-Setup.exe`](https://github.com/joaolfp/truco/releases/latest/download/Truco-Windows-Setup.exe) |
+| macOS 11+ (Apple Silicon and Intel) | [`Truco-macOS.dmg`](https://github.com/joaolfp/truco/releases/latest/download/Truco-macOS.dmg) |
+| Linux (x86_64) | [`Truco-Linux-x86_64.AppImage`](https://github.com/joaolfp/truco/releases/latest/download/Truco-Linux-x86_64.AppImage) or [`Truco-Linux-amd64.deb`](https://github.com/joaolfp/truco/releases/latest/download/Truco-Linux-amd64.deb) |
+
+The installers are not signed yet, so the first launch shows a warning:
+
+- **Windows**: on "Windows protected your PC", click *More info → Run anyway*.
+- **macOS**: if the app is blocked, open *System Settings → Privacy & Security* and click *Open Anyway*.
+
+## Install with Cargo
 
 Requirements: [Rust](https://rustup.rs). The toolchain version is pinned in `rust-toolchain.toml` and installed automatically by rustup.
-
-### Install
 
 ```sh
 cargo install --git https://github.com/joaolfp/truco

@@ -153,14 +153,29 @@
     .lightbox.open { display: flex; }
     .lightbox img { max-height: 92vh; border-radius: 8px; }
 
-    /* Install */
-    .steps { display: grid; gap: 20px; margin-top: 40px; max-width: 860px; }
-    .step { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
-    .step-num {
-      display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
-      background: var(--red); color: #fff; font-weight: 700; font-size: .9rem; margin-bottom: 12px;
+    /* Download */
+    .downloads { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 40px; }
+    .dl {
+      background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 28px; display: flex; flex-direction: column; align-items: flex-start; position: relative;
     }
-    .step p { color: var(--muted); margin: 0 0 14px; }
+    .dl h3 { font-size: 1.5rem; margin-bottom: 2px; }
+    .dl-meta { color: var(--muted); font-size: .9rem; margin: 0 0 20px; }
+    .btn-dl { background: var(--felt); color: var(--cream); }
+    .btn-dl:hover { background: var(--felt-light); }
+    .dl-alt { font-size: .88rem; color: var(--red); margin-top: 10px; }
+    .dl-help { font-size: .88rem; color: var(--muted); margin: 20px 0 0; padding-top: 16px; border-top: 1px dashed var(--line); }
+    .dl-tag {
+      display: none; position: absolute; top: -12px; left: 24px; background: var(--gold); color: var(--felt-deep);
+      font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px;
+    }
+    .dl.mine { border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(226, 176, 74, .18); }
+    .dl.mine .dl-tag { display: block; }
+    .dl.mine .btn-dl { background: var(--gold); color: var(--felt-deep); }
+    .dev { margin-top: 32px; max-width: 860px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 24px; }
+    .dev summary { cursor: pointer; font-weight: 600; }
+    .dev p { color: var(--muted); margin: 16px 0 4px; }
+    .dev p a { color: var(--red); }
     .code {
       position: relative; background: #17140f; color: #f3e9d2; border-radius: 10px;
       font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .88rem;
@@ -211,7 +226,7 @@
       <a href="#recursos" data-i18n="nav.features"></a>
       <a href="#modos" data-i18n="nav.modes"></a>
       <a href="#adversarios" data-i18n="nav.opponents"></a>
-      <a href="#instalar" data-i18n="nav.install"></a>
+      <a href="#baixar" data-i18n="nav.install"></a>
     </div>
     <div class="lang" role="group" aria-label="Idioma / Language">
       <button type="button" data-lang="pt-BR" aria-pressed="true">PT</button>
@@ -231,7 +246,7 @@
       <span class="badge" data-i18n="hero.b4"></span>
     </div>
     <div class="cta">
-      <a class="btn btn-gold" href="#instalar" data-i18n="hero.cta"></a>
+      <a class="btn btn-gold" href="#baixar" id="hero-dl" data-i18n="hero.cta"></a>
       <a class="btn btn-ghost" href="https://github.com/joaolfp/truco" target="_blank" rel="noopener">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
         GitHub
@@ -305,40 +320,47 @@
   </div>
 </section>
 
-<section id="instalar">
+<section id="baixar">
   <div class="wrap">
-    <div class="eyebrow" data-i18n="inst.eyebrow"></div>
-    <h2 data-i18n="inst.title"></h2>
-    <p class="lead" data-i18n="inst.lead"></p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3 data-i18n="inst.s1.t"></h3>
-        <p data-i18n="inst.s1.d"></p>
-        <div class="code"><span class="p">$ </span><span class="cmd">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</span></div>
+    <div class="eyebrow" data-i18n="dl.eyebrow"></div>
+    <h2 data-i18n="dl.title"></h2>
+    <p class="lead" data-i18n="dl.lead"></p>
+    <div class="downloads">
+      <div class="dl" data-os="windows">
+        <span class="dl-tag" data-i18n="dl.yours"></span>
+        <h3>Windows</h3>
+        <p class="dl-meta" data-i18n="dl.win.meta"></p>
+        <a class="btn btn-dl" href="https://github.com/joaolfp/truco/releases/latest/download/Truco-Windows-Setup.exe" data-i18n="dl.win.btn"></a>
+        <p class="dl-help" data-i18n="dl.win.help"></p>
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3 data-i18n="inst.s2.t"></h3>
-        <p data-i18n="inst.s2.d"></p>
-        <div class="code"><span class="p">$ </span><span class="cmd">cargo install --git https://github.com/joaolfp/truco</span></div>
+      <div class="dl" data-os="mac">
+        <span class="dl-tag" data-i18n="dl.yours"></span>
+        <h3>macOS</h3>
+        <p class="dl-meta" data-i18n="dl.mac.meta"></p>
+        <a class="btn btn-dl" href="https://github.com/joaolfp/truco/releases/latest/download/Truco-macOS.dmg" data-i18n="dl.mac.btn"></a>
+        <p class="dl-help" data-i18n="dl.mac.help"></p>
       </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3 data-i18n="inst.s3.t"></h3>
-        <p data-i18n="inst.s3.d"></p>
-        <div class="code"><span class="p">$ </span><span class="cmd">truco</span></div>
+      <div class="dl" data-os="linux">
+        <span class="dl-tag" data-i18n="dl.yours"></span>
+        <h3>Linux</h3>
+        <p class="dl-meta" data-i18n="dl.linux.meta"></p>
+        <a class="btn btn-dl" href="https://github.com/joaolfp/truco/releases/latest/download/Truco-Linux-x86_64.AppImage" data-i18n="dl.linux.btn"></a>
+        <a class="dl-alt" href="https://github.com/joaolfp/truco/releases/latest/download/Truco-Linux-amd64.deb" data-i18n="dl.linux.deb"></a>
+        <p class="dl-help" data-i18n="dl.linux.help"></p>
       </div>
     </div>
+    <p class="note" data-i18n="dl.note"></p>
 
-    <div class="step" style="margin-top:20px; max-width:860px">
-      <h3 data-i18n="inst.src.t"></h3>
-      <p data-i18n="inst.src.d"></p>
+    <details class="dev">
+      <summary data-i18n="dev.title"></summary>
+      <p data-i18n="dev.cargo"></p>
+      <div class="code"><span class="p">$ </span><span class="cmd">cargo install --git https://github.com/joaolfp/truco</span></div>
+      <p data-i18n="dev.src"></p>
       <div class="code"><span class="p">$ </span><span class="cmd">git clone https://github.com/joaolfp/truco
 cd truco
 cargo run --release</span></div>
-    </div>
-    <p class="note" data-i18n="inst.note"></p>
+      <p data-i18n="dev.docs"></p>
+    </details>
   </div>
 </section>
 
@@ -373,14 +395,15 @@ cargo run --release</span></div>
       "nav.features": "Recursos",
       "nav.modes": "Modos",
       "nav.opponents": "Adversários",
-      "nav.install": "Instalar",
+      "nav.install": "Baixar",
       "hero.eyebrow": "Jogo de cartas para desktop",
       "hero.title": "Bora jogar <em>truco</em>?",
       "hero.lead": "Jogue Truco Paulista ou Mineiro, um contra um, numa mesa redonda de boteco. Enfrente bots de quatro níveis e aprenda as regras com um tutorial interativo.",
       "hero.b1": "Truco Paulista",
       "hero.b2": "Truco Mineiro",
       "hero.b4": "PT-BR · English",
-      "hero.cta": "Como instalar ↓",
+      "hero.cta": "Baixar grátis ↓",
+      "hero.cta.os": "Baixar para {os} ↓",
       "alt.menu": "Menu principal do jogo Truco",
       "features.eyebrow": "Recursos",
       "features.title": "Tudo que um bom truco precisa",
@@ -423,18 +446,25 @@ cargo run --release</span></div>
       "gal.c4": "Tutorial: manilhas",
       "gal.c5": "Quiz do tutorial",
       "gal.c6": "Truco Mineiro",
-      "inst.eyebrow": "Instalação",
-      "inst.title": "Como instalar",
-      "inst.lead": "O Truco é instalado pelo Cargo, o gerenciador de pacotes do Rust. Funciona em macOS, Linux e Windows.",
-      "inst.s1.t": "Instale o Rust",
-      "inst.s1.d": "Se ainda não tem, instale pelo rustup. A versão do toolchain é fixada no projeto e baixada automaticamente. No Windows, use o instalador de rustup.rs.",
-      "inst.s2.t": "Instale o jogo",
-      "inst.s2.d": "O Cargo baixa o código, compila e coloca o binário no seu PATH.",
-      "inst.s3.t": "Jogue!",
-      "inst.s3.d": "Abra o jogo pelo terminal. A linguagem pode ser trocada a qualquer momento no app.",
-      "inst.src.t": "Rodar a partir do código-fonte",
-      "inst.src.d": "Prefere clonar o repositório? Também dá:",
-      "inst.note": "Mais detalhes sobre arquitetura e desenvolvimento estão na <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">documentação técnica</a>.",
+      "dl.eyebrow": "Download",
+      "dl.title": "Baixe e jogue",
+      "dl.lead": "Grátis. É só baixar o instalador do seu sistema, sem precisar de terminal.",
+      "dl.yours": "Seu sistema",
+      "dl.win.meta": "Windows 10 ou 11 · instalador .exe",
+      "dl.win.btn": "Baixar para Windows",
+      "dl.win.help": "Abra o instalador e siga os passos. Se aparecer <em>“O Windows protegeu o computador”</em>, clique em <strong>Mais informações → Executar assim mesmo</strong>. O aviso aparece porque o jogo ainda não tem uma assinatura paga da Microsoft.",
+      "dl.mac.meta": "macOS 11 ou mais novo · Apple Silicon e Intel",
+      "dl.mac.btn": "Baixar para macOS",
+      "dl.mac.help": "Abra o .dmg e arraste o Truco para <strong>Aplicativos</strong>. Na primeira vez o macOS pode bloquear o jogo: vá em <strong>Ajustes do Sistema → Privacidade e Segurança</strong> e clique em <strong>Abrir mesmo assim</strong>. Só precisa fazer isso uma vez.",
+      "dl.linux.meta": "64 bits · AppImage ou .deb",
+      "dl.linux.btn": "Baixar AppImage",
+      "dl.linux.deb": "Ubuntu/Debian? Baixe o .deb",
+      "dl.linux.help": "<strong>AppImage:</strong> clique com o botão direito → Propriedades → <em>Permitir executar como programa</em>, depois abra com dois cliques. <strong>.deb:</strong> abra com a central de programas do seu sistema.",
+      "dl.note": "Todas as versões ficam na <a href=\"https://github.com/joaolfp/truco/releases\" target=\"_blank\" rel=\"noopener\">página de releases</a>.",
+      "dev.title": "Para desenvolvedores: instalar pelo Cargo",
+      "dev.cargo": "Com o <a href=\"https://rustup.rs\" target=\"_blank\" rel=\"noopener\">Rust</a> instalado, dá para compilar e instalar direto do GitHub e abrir com o comando <code>truco</code>:",
+      "dev.src": "Ou rodar a partir do código-fonte:",
+      "dev.docs": "Arquitetura e desenvolvimento estão na <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">documentação técnica</a>.",
       "how.eyebrow": "Regras",
       "how.title": "Como jogar (versão rápida)",
       "how.1": "Cada mão você recebe 3 cartas e uma <strong>vira</strong> é virada na mesa. As manilhas são as cartas do valor seguinte ao da vira.",
@@ -450,14 +480,15 @@ cargo run --release</span></div>
       "nav.features": "Features",
       "nav.modes": "Modes",
       "nav.opponents": "Opponents",
-      "nav.install": "Install",
+      "nav.install": "Download",
       "hero.eyebrow": "Desktop card game",
       "hero.title": "Let's play <em>truco</em>!",
       "hero.lead": "Play Truco Paulista or Mineiro one-on-one at a round table in a Brazilian boteco. Face bots at four skill levels and learn the rules with an interactive tutorial.",
       "hero.b1": "Truco Paulista",
       "hero.b2": "Truco Mineiro",
       "hero.b4": "PT-BR · English",
-      "hero.cta": "How to install ↓",
+      "hero.cta": "Free download ↓",
+      "hero.cta.os": "Download for {os} ↓",
       "alt.menu": "Truco main menu",
       "features.eyebrow": "Features",
       "features.title": "Everything a good game of truco needs",
@@ -500,18 +531,25 @@ cargo run --release</span></div>
       "gal.c4": "Tutorial: manilhas",
       "gal.c5": "Tutorial quiz",
       "gal.c6": "Truco Mineiro",
-      "inst.eyebrow": "Installation",
-      "inst.title": "How to install",
-      "inst.lead": "Truco is installed with Cargo, Rust's package manager. It runs on macOS, Linux and Windows.",
-      "inst.s1.t": "Install Rust",
-      "inst.s1.d": "If you don't have it yet, install it with rustup. The toolchain version is pinned in the project and downloaded automatically. On Windows, use the installer from rustup.rs.",
-      "inst.s2.t": "Install the game",
-      "inst.s2.d": "Cargo downloads the code, builds it and puts the binary on your PATH.",
-      "inst.s3.t": "Play!",
-      "inst.s3.d": "Start the game from your terminal. You can switch languages at any time inside the app.",
-      "inst.src.t": "Run from source",
-      "inst.src.d": "Prefer cloning the repository? That works too:",
-      "inst.note": "Architecture and development details live in the <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">technical documentation</a>.",
+      "dl.eyebrow": "Download",
+      "dl.title": "Download and play",
+      "dl.lead": "Free. Just download the installer for your system, no terminal needed.",
+      "dl.yours": "Your system",
+      "dl.win.meta": "Windows 10 or 11 · .exe installer",
+      "dl.win.btn": "Download for Windows",
+      "dl.win.help": "Open the installer and follow the steps. If you see <em>“Windows protected your PC”</em>, click <strong>More info → Run anyway</strong>. The warning shows up because the game doesn't have a paid Microsoft signature yet.",
+      "dl.mac.meta": "macOS 11 or newer · Apple Silicon and Intel",
+      "dl.mac.btn": "Download for macOS",
+      "dl.mac.help": "Open the .dmg and drag Truco into <strong>Applications</strong>. The first time, macOS may block the game: go to <strong>System Settings → Privacy &amp; Security</strong> and click <strong>Open Anyway</strong>. You only need to do this once.",
+      "dl.linux.meta": "64-bit · AppImage or .deb",
+      "dl.linux.btn": "Download AppImage",
+      "dl.linux.deb": "Ubuntu/Debian? Get the .deb",
+      "dl.linux.help": "<strong>AppImage:</strong> right-click → Properties → <em>Allow executing as program</em>, then double-click it. <strong>.deb:</strong> open it with your system's software center.",
+      "dl.note": "Every version is on the <a href=\"https://github.com/joaolfp/truco/releases\" target=\"_blank\" rel=\"noopener\">releases page</a>.",
+      "dev.title": "For developers: install with Cargo",
+      "dev.cargo": "With <a href=\"https://rustup.rs\" target=\"_blank\" rel=\"noopener\">Rust</a> installed, you can build and install straight from GitHub and start it with the <code>truco</code> command:",
+      "dev.src": "Or run it from source:",
+      "dev.docs": "Architecture and development details live in the <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">technical documentation</a>.",
       "how.eyebrow": "Rules",
       "how.title": "How to play (quick version)",
       "how.1": "Each hand you get 3 cards and a <strong>vira</strong> is turned face up. The manilhas are the cards of the rank right after the vira.",
@@ -534,6 +572,20 @@ cargo run --release</span></div>
     return "pt-BR";
   }
 
+  function detectOS() {
+    const p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || "").toLowerCase();
+    if (p.includes("win")) return "windows";
+    if (p.includes("mac")) return "mac";
+    if (p.includes("linux") && !/android/.test(navigator.userAgent.toLowerCase())) return "linux";
+    return null;
+  }
+  const OS = detectOS();
+  const OS_NAME = { windows: "Windows", mac: "macOS", linux: "Linux" };
+  if (OS) {
+    const card = document.querySelector(`.dl[data-os="${OS}"]`);
+    if (card) card.classList.add("mine");
+  }
+
   function setLang(lang) {
     const dict = I18N[lang] || I18N["pt-BR"];
     document.documentElement.lang = lang;
@@ -542,6 +594,7 @@ cargo run --release</span></div>
       const v = dict[el.dataset.i18n];
       if (v !== undefined) el.innerHTML = v;
     });
+    if (OS) document.getElementById("hero-dl").innerHTML = dict["hero.cta.os"].replace("{os}", OS_NAME[OS]);
     document.querySelectorAll("[data-i18n-alt]").forEach(el => {
       const v = dict[el.dataset.i18nAlt];
       if (v !== undefined) el.alt = v.replace(/<[^>]+>/g, "");
