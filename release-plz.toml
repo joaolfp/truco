@@ -13,6 +13,9 @@ release_always = false
 git_tag_enable = true
 git_release_enable = true
 changelog_update = true
+# `feat` commits bump the minor version (0.1.0 -> 0.2.0) even before 1.0;
+# `fix` and others bump the patch (0.1.0 -> 0.1.1).
+features_always_increment_minor = true
 pr_labels = ["release"]
 
 [changelog]
