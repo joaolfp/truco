@@ -135,13 +135,13 @@ The scenes are listed in `src/ui/capture.rs`. The game scenes come from determin
 
 ## CI and releases
 
-- **CI** ([`.github/workflows/CI.yml`](../.github/workflows/CI.yml)) builds and tests every pull request.
+- **CI** ([`.github/workflows/CI.yml`](../.github/workflows/CI.yml)) builds and tests every pull request. A new push to the same PR cancels the previous run.
 - **Renovate** keeps dependencies and the Rust toolchain up to date, using `chore(deps):` commits.
 - **Releases** are automated with [release-plz](https://release-plz.dev) ([`release-plz.toml`](../release-plz.toml), [`.github/workflows/release-plz.yml`](../.github/workflows/release-plz.yml)):
   1. Every push to `main` opens or updates a `chore: release vX.Y.Z` PR. That PR bumps the version in `Cargo.toml` and `Cargo.lock` and adds the `CHANGELOG.md` section, generated from conventional commits (`feat`, `fix`, `docs`, `perf`, `refactor`…).
   2. Merging that PR creates the `vX.Y.Z` tag and the GitHub release.
   3. Nothing is published to crates.io (`git_only = true`); versions come from git tags.
-  4. Right after the release is created, [`.github/workflows/build-installers.yml`](../.github/workflows/build-installers.yml) builds the installers with [cargo-packager](https://github.com/crabnebula-dev/cargo-packager) and attaches them to the release: `Truco-Windows-Setup.exe` (NSIS), `Truco-macOS.dmg` (universal, ad-hoc signed), `Truco-Linux-x86_64.AppImage` and `Truco-Linux-amd64.deb`. The names never change, so the landing page links to `releases/latest/download/<file>`. The same workflow runs as a check on pull requests that touch packaging, and can be started by hand from the Actions tab with a tag.
+  4. Right after the release is created, [`.github/workflows/build-installers.yml`](../.github/workflows/build-installers.yml) builds the installers with [cargo-packager](https://github.com/crabnebula-dev/cargo-packager) and attaches them to the release: `Truco-Windows-Setup.exe` (NSIS), `Truco-macOS.dmg` (universal, ad-hoc signed), `Truco-Linux-x86_64.AppImage` and `Truco-Linux-amd64.deb`. The names never change, so the landing page links to `releases/latest/download/<file>`. The same workflow runs as a check on pull requests that touch packaging (except release-plz PRs, which only bump the version), and can be started by hand from the Actions tab with a tag.
 
   The workflow uses the `RELEASE_PLZ_TOKEN` secret (a fine-grained token limited to this repository, with read and write access to *Contents* and *Pull requests*) so that release PRs also trigger CI.
 

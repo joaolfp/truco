@@ -172,22 +172,6 @@
     .dl.mine { border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(226, 176, 74, .18); }
     .dl.mine .dl-tag { display: block; }
     .dl.mine .btn-dl { background: var(--gold); color: var(--felt-deep); }
-    .dev { margin-top: 32px; max-width: 860px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 24px; }
-    .dev summary { cursor: pointer; font-weight: 600; }
-    .dev p { color: var(--muted); margin: 16px 0 4px; }
-    .dev p a { color: var(--red); }
-    .code {
-      position: relative; background: #17140f; color: #f3e9d2; border-radius: 10px;
-      font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .88rem;
-      padding: 16px 96px 16px 18px; margin: 10px 0; white-space: pre-wrap; overflow-wrap: anywhere;
-    }
-    .code .p { color: var(--gold); user-select: none; }
-    .copy {
-      position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(255, 255, 255, .08);
-      color: #f3e9d2; border: 0; border-radius: 6px; padding: 6px 9px; cursor: pointer; font-size: .75rem;
-      font-family: Inter, sans-serif;
-    }
-    .copy:hover { background: rgba(255, 255, 255, .16); }
     .note { font-size: .9rem; color: var(--muted); margin-top: 24px; }
     .note a { color: var(--red); }
 
@@ -351,16 +335,6 @@
     </div>
     <p class="note" data-i18n="dl.note"></p>
 
-    <details class="dev">
-      <summary data-i18n="dev.title"></summary>
-      <p data-i18n="dev.cargo"></p>
-      <div class="code"><span class="p">$ </span><span class="cmd">cargo install --git https://github.com/joaolfp/truco</span></div>
-      <p data-i18n="dev.src"></p>
-      <div class="code"><span class="p">$ </span><span class="cmd">git clone https://github.com/joaolfp/truco
-cd truco
-cargo run --release</span></div>
-      <p data-i18n="dev.docs"></p>
-    </details>
   </div>
 </section>
 
@@ -461,10 +435,6 @@ cargo run --release</span></div>
       "dl.linux.deb": "Ubuntu/Debian? Baixe o .deb",
       "dl.linux.help": "<strong>AppImage:</strong> clique com o botão direito → Propriedades → <em>Permitir executar como programa</em>, depois abra com dois cliques. <strong>.deb:</strong> abra com a central de programas do seu sistema.",
       "dl.note": "Todas as versões ficam na <a href=\"https://github.com/joaolfp/truco/releases\" target=\"_blank\" rel=\"noopener\">página de releases</a>.",
-      "dev.title": "Para desenvolvedores: instalar pelo Cargo",
-      "dev.cargo": "Com o <a href=\"https://rustup.rs\" target=\"_blank\" rel=\"noopener\">Rust</a> instalado, dá para compilar e instalar direto do GitHub e abrir com o comando <code>truco</code>:",
-      "dev.src": "Ou rodar a partir do código-fonte:",
-      "dev.docs": "Arquitetura e desenvolvimento estão na <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">documentação técnica</a>.",
       "how.eyebrow": "Regras",
       "how.title": "Como jogar (versão rápida)",
       "how.1": "Cada mão você recebe 3 cartas e uma <strong>vira</strong> é virada na mesa. As manilhas são as cartas do valor seguinte ao da vira.",
@@ -546,10 +516,6 @@ cargo run --release</span></div>
       "dl.linux.deb": "Ubuntu/Debian? Get the .deb",
       "dl.linux.help": "<strong>AppImage:</strong> right-click → Properties → <em>Allow executing as program</em>, then double-click it. <strong>.deb:</strong> open it with your system's software center.",
       "dl.note": "Every version is on the <a href=\"https://github.com/joaolfp/truco/releases\" target=\"_blank\" rel=\"noopener\">releases page</a>.",
-      "dev.title": "For developers: install with Cargo",
-      "dev.cargo": "With <a href=\"https://rustup.rs\" target=\"_blank\" rel=\"noopener\">Rust</a> installed, you can build and install straight from GitHub and start it with the <code>truco</code> command:",
-      "dev.src": "Or run it from source:",
-      "dev.docs": "Architecture and development details live in the <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">technical documentation</a>.",
       "how.eyebrow": "Rules",
       "how.title": "How to play (quick version)",
       "how.1": "Each hand you get 3 cards and a <strong>vira</strong> is turned face up. The manilhas are the cards of the rank right after the vira.",
@@ -602,29 +568,11 @@ cargo run --release</span></div>
     document.querySelectorAll(".lang button").forEach(b => {
       b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
     });
-    document.querySelectorAll(".copy").forEach(b => { b.textContent = lang === "en" ? "Copy" : "Copiar"; });
     try { localStorage.setItem("truco-lang", lang); } catch (_) {}
   }
 
   document.querySelectorAll(".lang button").forEach(b => {
     b.addEventListener("click", () => setLang(b.dataset.lang));
-  });
-
-  // Copy buttons on code blocks
-  document.querySelectorAll(".code").forEach(block => {
-    const btn = document.createElement("button");
-    btn.className = "copy";
-    btn.type = "button";
-    btn.addEventListener("click", async () => {
-      const text = block.querySelector(".cmd").textContent;
-      try {
-        await navigator.clipboard.writeText(text);
-        const prev = btn.textContent;
-        btn.textContent = "✓";
-        setTimeout(() => { btn.textContent = prev; }, 1200);
-      } catch (_) {}
-    });
-    block.appendChild(btn);
   });
 
   // Lightbox for screenshots
