@@ -11,6 +11,8 @@ license = "MIT"
 fastrand = "2.5.0"
 iced = { version = "0.14", features = ["canvas", "tokio"] }
 png = "0.18.1"
+serde = { version = "1.0.229", features = ["derive"] }
+ureq = { version = "3", features = ["json"] }
 
 [build-dependencies]
 winresource = "0.1.34"

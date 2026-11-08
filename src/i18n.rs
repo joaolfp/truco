@@ -36,6 +36,60 @@ impl Language {
 		}
 	}
 
+	pub fn check_for_updates(self) -> &'static str {
+		self.pick("Verificar atualizações", "Check for updates")
+	}
+
+	pub fn checking_for_updates(self) -> &'static str {
+		self.pick("Verificando atualizações…", "Checking for updates…")
+	}
+
+	pub fn up_to_date(self) -> &'static str {
+		self.pick(
+			"Você já está na versão mais recente.",
+			"You already have the latest version.",
+		)
+	}
+
+	pub fn update_to(self, version: &str) -> String {
+		match self {
+			Language::PortugueseBr => format!("Atualizar para v{version}"),
+			Language::English => format!("Update to v{version}"),
+		}
+	}
+
+	pub fn update_available(self) -> &'static str {
+		self.pick(
+			"Nova versão disponível! O jogo reinicia sozinho depois de atualizar.",
+			"A new version is available! The game restarts by itself after updating.",
+		)
+	}
+
+	pub fn installing_update(self, version: &str) -> String {
+		match self {
+			Language::PortugueseBr => format!("Baixando e instalando v{version}…"),
+			Language::English => format!("Downloading and installing v{version}…"),
+		}
+	}
+
+	pub fn update_handed(self) -> &'static str {
+		self.pick(
+			"Conclua a atualização na janela que abriu.",
+			"Finish the update in the window that just opened.",
+		)
+	}
+
+	pub fn update_failed(self, error: &str) -> String {
+		match self {
+			Language::PortugueseBr => format!("Não foi possível atualizar: {error}"),
+			Language::English => format!("Could not update: {error}"),
+		}
+	}
+
+	pub fn try_again(self) -> &'static str {
+		self.pick("Tentar de novo", "Try again")
+	}
+
 	/// Name of the call that raises the hand to `stake`.
 	pub fn raise_name(self, stake: Stake) -> &'static str {
 		match stake {

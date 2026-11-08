@@ -8,6 +8,7 @@ mod game;
 mod i18n;
 mod opponents;
 mod ui;
+mod update;
 
 use iced::window;
 use ui::App;

@@ -28,6 +28,8 @@ use crate::game::Variant;
 use crate::i18n::Language;
 use crate::opponents::Difficulty;
 use crate::opponents::Opponent;
+use crate::update;
+use crate::update::Release;
 
 /// Delay between bot moves so the player can follow what happens.
 const BOT_DELAY: Duration = Duration::from_millis(900);
@@ -38,6 +40,20 @@ pub enum Screen {
 	Tutorial,
 	Opponents,
 	Game,
+}
+
+/// Progress of the "check for updates" option in the menu.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum UpdateState {
+	#[default]
+	Idle,
+	Checking,
+	UpToDate,
+	Available(Release),
+	Installing(Release),
+	/// The player finishes the update in the page or installer that opened.
+	Handed,
+	Failed(String),
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +73,10 @@ pub enum Message {
 	Act(Action),
 	NextHand,
 	BotTick,
+	CheckForUpdate,
+	UpdateChecked(Result<Option<Release>, String>),
+	InstallUpdate,
+	UpdateInstalled(Result<update::Installed, String>),
 	#[cfg(feature = "screenshots")]
 	Capture(capture::Step),
 }
@@ -75,6 +95,7 @@ pub struct App {
 	rng: fastrand::Rng,
 	/// Set while the automated screenshot tour runs; pauses the bot.
 	touring: bool,
+	update: UpdateState,
 }
 
 impl Default for App {
@@ -90,6 +111,7 @@ impl Default for App {
 			quiz_answer: None,
 			rng: fastrand::Rng::new(),
 			touring: false,
+			update: UpdateState::Idle,
 		}
 	}
 }
@@ -184,6 +206,30 @@ impl App {
 					let _ = game.apply(Player::Bot, decision.action);
 				}
 			}
+			Message::CheckForUpdate => {
+				self.update = UpdateState::Checking;
+				return Task::perform(update::check(), Message::UpdateChecked);
+			}
+			Message::UpdateChecked(result) => {
+				self.update = match result {
+					Ok(Some(release)) => UpdateState::Available(release),
+					Ok(None) => UpdateState::UpToDate,
+					Err(error) => UpdateState::Failed(error),
+				};
+			}
+			Message::InstallUpdate => {
+				if let UpdateState::Available(release) = &self.update {
+					let release = release.clone();
+					self.update = UpdateState::Installing(release.clone());
+					return Task::perform(update::install(release), Message::UpdateInstalled);
+				}
+			}
+			Message::UpdateInstalled(result) => match result {
+				// The new version (or its installer) takes over from here.
+				Ok(update::Installed::Restart) => return iced::exit(),
+				Ok(update::Installed::Handed) => self.update = UpdateState::Handed,
+				Err(error) => self.update = UpdateState::Failed(error),
+			},
 			#[cfg(feature = "screenshots")]
 			Message::Capture(step) => return capture::update(self, step),
 		}
@@ -203,12 +249,17 @@ impl App {
 
 	pub fn view(&self) -> Element<'_, Message> {
 		let content = match self.screen {
-			Screen::Menu => menu::view(self.language, self.variant, self.game.is_some()),
+			Screen::Menu => menu::view(
+				self.language,
+				self.variant,
+				self.game.is_some(),
+				&self.update,
+			),
 			Screen::Tutorial => tutorial::view(self.language, self.tutorial_step, self.quiz_answer),
 			Screen::Opponents => opponents::view(self.language, self.variant),
 			Screen::Game => match &self.game {
 				Some(game) => table::view(game, self.opponent, self.language, self.hints),
-				None => menu::view(self.language, self.variant, false),
+				None => menu::view(self.language, self.variant, false, &self.update),
 			},
 		};
 		let background = canvas(scene::Wall).width(Fill).height(Fill);
