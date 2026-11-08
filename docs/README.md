@@ -142,6 +142,7 @@ The scenes are listed in `src/ui/capture.rs`. The game scenes come from determin
   2. Merging that PR creates the `vX.Y.Z` tag and the GitHub release.
   3. Nothing is published to crates.io (`git_only = true`); versions come from git tags.
   4. Right after the release is created, [`.github/workflows/build-installers.yml`](../.github/workflows/build-installers.yml) builds the installers with [cargo-packager](https://github.com/crabnebula-dev/cargo-packager) and attaches them to the release: `Truco-Windows-Setup.exe` (NSIS), `Truco-macOS.dmg` (universal, ad-hoc signed), `Truco-Linux-x86_64.AppImage` and `Truco-Linux-amd64.deb`. The names never change, so the landing page links to `releases/latest/download/<file>`. The same workflow runs as a check on pull requests that touch packaging (except release-plz PRs, which only bump the version), and can be started by hand from the Actions tab with a tag.
+  5. Once the installers are attached, [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) publishes the landing page ([`web/`](../web)) to GitHub Pages at https://joaolfp.github.io/truco/. It copies `docs/screenshots/` into the site. It can also be run by hand from the Actions tab.
 
   The workflow uses the `RELEASE_PLZ_TOKEN` secret (a fine-grained token limited to this repository, with read and write access to *Contents* and *Pull requests*) so that release PRs also trigger CI.
 

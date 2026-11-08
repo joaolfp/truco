@@ -65,3 +65,14 @@ jobs:
     uses: ./.github/workflows/build-installers.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
+
+  # Publishes the landing page once the installers are on the release, so the
+  # download buttons point to files that exist.
+  site:
+    name: Site
+    needs: installers
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
