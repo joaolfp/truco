@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [0.2.0](https://github.com/joaolfp/truco/compare/v0.1.0...v0.2.0) - 2026-11-08
+
+### Bug Fixes
+
+- remove developer section from landing page
+
+### Features
+
+- build installers for Windows, macOS and Linux
+- add landing page in web/
+
 ## [0.1.0](https://github.com/joaolfp/truco/releases/tag/v0.1.0) - 2026-11-07
 
 ### Documentation
