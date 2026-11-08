@@ -11,7 +11,8 @@ name: Build installers
 # - Called by release-plz.yml right after a release is created: uploads the
 #   installers to that GitHub release.
 # - On pull requests that touch packaging: only builds, as a check
-#   (the installers are kept as workflow artifacts).
+#   (the installers are kept as workflow artifacts). Skipped on release-plz
+#   PRs, which only bump the version.
 # - Manually (Actions tab): builds a tag and uploads to its release.
 
 on:
@@ -38,9 +39,17 @@ on:
 permissions:
   contents: write
 
+# A new push to the same PR cancels the previous check run.
+concurrency:
+  group: installers-${{ inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     name: ${{ matrix.name }}
+    # Release PRs only bump the version; the installers are built once, right
+    # after that PR is merged and the release is created.
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release-plz-')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
