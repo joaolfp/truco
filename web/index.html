@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Truco — jogo de cartas para desktop</title>
+  <meta name="description" content="Jogue Truco Paulista ou Mineiro contra bots num boteco brasileiro. Jogo de cartas para desktop.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♣</text></svg>">
+  <style>
+    :root {
+      --felt: #0f3d2e;
+      --felt-deep: #0a2b20;
+      --felt-light: #155240;
+      --wood: #5a3a22;
+      --cream: #f6efe0;
+      --paper: #fffaf0;
+      --ink: #1d1a16;
+      --muted: #6b6257;
+      --gold: #e2b04a;
+      --red: #c0392b;
+      --line: rgba(29, 26, 22, .12);
+      --radius: 14px;
+      --max: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: var(--cream);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; }
+    h1, h2, h3 { font-family: Fraunces, Georgia, serif; line-height: 1.15; margin: 0 0 .5em; }
+    h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    h3 { font-size: 1.25rem; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+    section { padding: 88px 0; }
+    .eyebrow {
+      text-transform: uppercase; letter-spacing: .14em; font-size: .78rem;
+      font-weight: 600; color: var(--red); margin-bottom: .6rem;
+    }
+    .lead { font-size: 1.1rem; color: var(--muted); max-width: 640px; }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(10, 43, 32, .92); backdrop-filter: blur(8px);
+      color: var(--cream);
+    }
+    nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+    .brand { font-family: Fraunces, serif; font-weight: 800; font-size: 1.35rem; text-decoration: none; display: flex; gap: 8px; align-items: center; }
+    .brand span { color: var(--gold); }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; font-size: .92rem; }
+    .nav-links a { text-decoration: none; opacity: .8; }
+    .nav-links a:hover { opacity: 1; }
+    .lang {
+      display: flex; border: 1px solid rgba(246, 239, 224, .3); border-radius: 999px; overflow: hidden;
+    }
+    .lang button {
+      background: none; border: 0; color: var(--cream); font: 600 .78rem Inter, sans-serif;
+      padding: 6px 12px; cursor: pointer; opacity: .65;
+    }
+    .lang button[aria-pressed="true"] { background: var(--gold); color: var(--felt-deep); opacity: 1; }
+
+    /* Hero */
+    .hero {
+      background:
+        radial-gradient(ellipse at 50% 0%, var(--felt-light) 0%, transparent 60%),
+        radial-gradient(circle at 20% 80%, rgba(226, 176, 74, .08), transparent 40%),
+        var(--felt);
+      color: var(--cream);
+      padding: 80px 0 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::before {
+      content: "♠ ♥ ♦ ♣"; position: absolute; right: -40px; top: 30px;
+      font-size: 180px; opacity: .04; letter-spacing: 20px; white-space: nowrap; pointer-events: none;
+    }
+    .hero h1 { font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 800; }
+    .hero h1 em { font-style: normal; color: var(--gold); }
+    .hero .lead { color: rgba(246, 239, 224, .78); font-size: 1.2rem; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 56px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 22px; border-radius: 999px; font-weight: 600; text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-gold { background: var(--gold); color: var(--felt-deep); box-shadow: 0 6px 20px rgba(226, 176, 74, .3); }
+    .btn-ghost { border: 1px solid rgba(246, 239, 224, .35); color: var(--cream); }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .badge {
+      font-size: .8rem; padding: 4px 12px; border-radius: 999px;
+      background: rgba(246, 239, 224, .1); border: 1px solid rgba(246, 239, 224, .15);
+    }
+    .hero-shot {
+      width: 100%; max-width: 860px; margin-left: auto; margin-right: auto;
+      border-radius: var(--radius) var(--radius) 0 0;
+      box-shadow: 0 -10px 60px rgba(0, 0, 0, .45);
+      border: 6px solid var(--wood); border-bottom: 0;
+      margin-top: 8px; cursor: zoom-in;
+    }
+
+    /* Features */
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 40px; }
+    .card {
+      background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 26px; position: relative;
+    }
+    .card .suit { font-size: 1.8rem; line-height: 1; margin-bottom: 14px; }
+    .card p { margin: 0; color: var(--muted); }
+    .red { color: var(--red); }
+
+    /* Modes */
+    .modes { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .table-wrap { overflow-x: auto; margin-top: 32px; border-radius: var(--radius); border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; background: var(--cream); }
+    th, td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+    thead th { background: var(--felt); color: var(--cream); font-family: Fraunces, serif; font-size: 1.1rem; }
+    tbody th { font-weight: 600; width: 22%; }
+    tr:last-child td, tr:last-child th { border-bottom: 0; }
+
+    /* Opponents */
+    .opponents { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-top: 40px; }
+    .opp {
+      background: var(--felt); color: var(--cream); border-radius: var(--radius); padding: 24px;
+      border: 1px solid rgba(255, 255, 255, .06);
+    }
+    .opp h3 { margin-bottom: 2px; }
+    .stars { color: var(--gold); letter-spacing: 3px; font-size: 1rem; }
+    .level { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; opacity: .7; margin: 4px 0 12px; }
+    .opp p { margin: 0; color: rgba(246, 239, 224, .78); font-size: .95rem; }
+
+    /* Gallery */
+    .gallery-sec { background: var(--felt-deep); color: var(--cream); }
+    .gallery-sec .lead { color: rgba(246, 239, 224, .7); }
+    .gallery { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 40px; }
+    figure { margin: 0; }
+    figure img { border-radius: 10px; border: 1px solid rgba(255, 255, 255, .1); cursor: zoom-in; }
+    figcaption { font-size: .88rem; opacity: .7; margin-top: 8px; }
+    .lightbox {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, .88); display: none;
+      align-items: center; justify-content: center; padding: 16px; z-index: 50; cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-height: 92vh; border-radius: 8px; }
+
+    /* Install */
+    .steps { display: grid; gap: 20px; margin-top: 40px; max-width: 860px; }
+    .step { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+    .step-num {
+      display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+      background: var(--red); color: #fff; font-weight: 700; font-size: .9rem; margin-bottom: 12px;
+    }
+    .step p { color: var(--muted); margin: 0 0 14px; }
+    .code {
+      position: relative; background: #17140f; color: #f3e9d2; border-radius: 10px;
+      font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .88rem;
+      padding: 16px 96px 16px 18px; margin: 10px 0; white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .code .p { color: var(--gold); user-select: none; }
+    .copy {
+      position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(255, 255, 255, .08);
+      color: #f3e9d2; border: 0; border-radius: 6px; padding: 6px 9px; cursor: pointer; font-size: .75rem;
+      font-family: Inter, sans-serif;
+    }
+    .copy:hover { background: rgba(255, 255, 255, .16); }
+    .note { font-size: .9rem; color: var(--muted); margin-top: 24px; }
+    .note a { color: var(--red); }
+
+    /* How to play */
+    .howto { background: var(--paper); border-top: 1px solid var(--line); }
+    .howto ol { counter-reset: s; list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 14px; max-width: 760px; }
+    .howto li {
+      counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start;
+      padding: 16px 20px; background: var(--cream); border-radius: 10px; border: 1px solid var(--line);
+    }
+    .howto li::before {
+      content: counter(s); font-family: Fraunces, serif; font-weight: 800; font-size: 1.6rem;
+      color: var(--felt-light); line-height: 1.1;
+    }
+    .rank { font-family: "JetBrains Mono", monospace; background: var(--felt); color: var(--cream); padding: 1px 8px; border-radius: 5px; font-size: .88em; white-space: nowrap; }
+
+    footer { background: var(--felt-deep); color: rgba(246, 239, 224, .65); padding: 40px 0; font-size: .9rem; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
+    footer a { color: var(--gold); }
+
+    @media (max-width: 720px) {
+      section { padding: 64px 0; }
+      .nav-links { display: none; }
+      .lang { margin-left: auto; }
+      .hero { padding-top: 56px; }
+      .hero-shot { border-width: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">♣ <span>Truco</span></a>
+    <div class="nav-links">
+      <a href="#recursos" data-i18n="nav.features"></a>
+      <a href="#modos" data-i18n="nav.modes"></a>
+      <a href="#adversarios" data-i18n="nav.opponents"></a>
+      <a href="#instalar" data-i18n="nav.install"></a>
+    </div>
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button type="button" data-lang="pt-BR" aria-pressed="true">PT</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow" style="color:var(--gold)" data-i18n="hero.eyebrow"></div>
+    <h1 data-i18n="hero.title"></h1>
+    <p class="lead" data-i18n="hero.lead"></p>
+    <div class="badges">
+      <span class="badge" data-i18n="hero.b1"></span>
+      <span class="badge" data-i18n="hero.b2"></span>
+      <span class="badge" data-i18n="hero.b4"></span>
+    </div>
+    <div class="cta">
+      <a class="btn btn-gold" href="#instalar" data-i18n="hero.cta"></a>
+      <a class="btn btn-ghost" href="https://github.com/joaolfp/truco" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+    <img class="hero-shot" src="../docs/screenshots/menu.png" alt="" data-i18n-alt="alt.menu" width="2560" height="1720">
+  </div>
+</header>
+
+<section id="recursos">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="features.eyebrow"></div>
+    <h2 data-i18n="features.title"></h2>
+    <p class="lead" data-i18n="features.lead"></p>
+    <div class="grid">
+      <div class="card"><div class="suit">♣</div><h3 data-i18n="f1.t"></h3><p data-i18n="f1.d"></p></div>
+      <div class="card"><div class="suit red">♥</div><h3 data-i18n="f2.t"></h3><p data-i18n="f2.d"></p></div>
+      <div class="card"><div class="suit">♠</div><h3 data-i18n="f3.t"></h3><p data-i18n="f3.d"></p></div>
+      <div class="card"><div class="suit red">♦</div><h3 data-i18n="f4.t"></h3><p data-i18n="f4.d"></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="modes" id="modos">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="modes.eyebrow"></div>
+    <h2 data-i18n="modes.title"></h2>
+    <p class="lead" data-i18n="modes.lead"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th></th><th>Truco Paulista</th><th>Truco Mineiro</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Manilhas</th><td data-i18n="modes.p.man"></td><td data-i18n="modes.m.man"></td></tr>
+          <tr><th scope="row" data-i18n="modes.ladder"></th><td>1 → 3 → 6 → 9 → 12</td><td>2 → 4 → 8 → 10 → 12</td></tr>
+          <tr><th scope="row" data-i18n="modes.special"></th><td data-i18n="modes.p.special"></td><td data-i18n="modes.m.special"></td></tr>
+          <tr><th scope="row" data-i18n="modes.win"></th><td data-i18n="modes.twelve"></td><td data-i18n="modes.twelve"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="adversarios">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="opp.eyebrow"></div>
+    <h2 data-i18n="opp.title"></h2>
+    <p class="lead" data-i18n="opp.lead"></p>
+    <div class="opponents">
+      <div class="opp"><h3>Tonho</h3><div class="stars">★☆☆☆</div><div class="level" data-i18n="opp.l1"></div><p data-i18n="opp.d1"></p></div>
+      <div class="opp"><h3>Dona Cida</h3><div class="stars">★★☆☆</div><div class="level" data-i18n="opp.l2"></div><p data-i18n="opp.d2"></p></div>
+      <div class="opp"><h3>Seu Chico</h3><div class="stars">★★★☆</div><div class="level" data-i18n="opp.l3"></div><p data-i18n="opp.d3"></p></div>
+      <div class="opp"><h3>Bigode</h3><div class="stars">★★★★</div><div class="level" data-i18n="opp.l4"></div><p data-i18n="opp.d4"></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="gallery-sec" id="telas">
+  <div class="wrap">
+    <div class="eyebrow" style="color:var(--gold)" data-i18n="gal.eyebrow"></div>
+    <h2 data-i18n="gal.title"></h2>
+    <div class="gallery">
+      <figure><img loading="lazy" src="../docs/screenshots/opponents.png" alt="" data-i18n-alt="gal.c1"><figcaption data-i18n="gal.c1"></figcaption></figure>
+      <figure><img loading="lazy" src="../docs/screenshots/game-hints.png" alt="" data-i18n-alt="gal.c2"><figcaption data-i18n="gal.c2"></figcaption></figure>
+      <figure><img loading="lazy" src="../docs/screenshots/game-truco.png" alt="" data-i18n-alt="gal.c3"><figcaption data-i18n="gal.c3"></figcaption></figure>
+      <figure><img loading="lazy" src="../docs/screenshots/tutorial-manilhas.png" alt="" data-i18n-alt="gal.c4"><figcaption data-i18n="gal.c4"></figcaption></figure>
+      <figure><img loading="lazy" src="../docs/screenshots/tutorial-quiz.png" alt="" data-i18n-alt="gal.c5"><figcaption data-i18n="gal.c5"></figcaption></figure>
+      <figure><img loading="lazy" src="../docs/screenshots/game-mineiro.png" alt="" data-i18n-alt="gal.c6"><figcaption data-i18n="gal.c6"></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="instalar">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="inst.eyebrow"></div>
+    <h2 data-i18n="inst.title"></h2>
+    <p class="lead" data-i18n="inst.lead"></p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-i18n="inst.s1.t"></h3>
+        <p data-i18n="inst.s1.d"></p>
+        <div class="code"><span class="p">$ </span><span class="cmd">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</span></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-i18n="inst.s2.t"></h3>
+        <p data-i18n="inst.s2.d"></p>
+        <div class="code"><span class="p">$ </span><span class="cmd">cargo install --git https://github.com/joaolfp/truco</span></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-i18n="inst.s3.t"></h3>
+        <p data-i18n="inst.s3.d"></p>
+        <div class="code"><span class="p">$ </span><span class="cmd">truco</span></div>
+      </div>
+    </div>
+
+    <div class="step" style="margin-top:20px; max-width:860px">
+      <h3 data-i18n="inst.src.t"></h3>
+      <p data-i18n="inst.src.d"></p>
+      <div class="code"><span class="p">$ </span><span class="cmd">git clone https://github.com/joaolfp/truco
+cd truco
+cargo run --release</span></div>
+    </div>
+    <p class="note" data-i18n="inst.note"></p>
+  </div>
+</section>
+
+<section class="howto" id="como-jogar">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="how.eyebrow"></div>
+    <h2 data-i18n="how.title"></h2>
+    <ol>
+      <li><div data-i18n="how.1"></div></li>
+      <li><div data-i18n="how.2"></div></li>
+      <li><div data-i18n="how.3"></div></li>
+      <li><div data-i18n="how.4"></div></li>
+      <li><div data-i18n="how.5"></div></li>
+    </ol>
+    <p class="note" data-i18n="how.mineiro" style="max-width:760px"></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span data-i18n="footer.made"></span>
+    <a href="https://github.com/joaolfp/truco" target="_blank" rel="noopener">github.com/joaolfp/truco</a>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true"><img alt=""></div>
+
+<script>
+  const I18N = {
+    "pt-BR": {
+      "doc.title": "Truco — jogo de cartas para desktop",
+      "nav.features": "Recursos",
+      "nav.modes": "Modos",
+      "nav.opponents": "Adversários",
+      "nav.install": "Instalar",
+      "hero.eyebrow": "Jogo de cartas para desktop",
+      "hero.title": "Bora jogar <em>truco</em>?",
+      "hero.lead": "Jogue Truco Paulista ou Mineiro, um contra um, numa mesa redonda de boteco. Enfrente bots de quatro níveis e aprenda as regras com um tutorial interativo.",
+      "hero.b1": "Truco Paulista",
+      "hero.b2": "Truco Mineiro",
+      "hero.b4": "PT-BR · English",
+      "hero.cta": "Como instalar ↓",
+      "alt.menu": "Menu principal do jogo Truco",
+      "features.eyebrow": "Recursos",
+      "features.title": "Tudo que um bom truco precisa",
+      "features.lead": "Regras completas, adversários com personalidade e ajuda pra quem tá começando.",
+      "f1.t": "Dois modos de jogo",
+      "f1.d": "Truco Paulista com vira e manilhas variáveis, ou Truco Mineiro com manilhas fixas. Escolha no menu principal.",
+      "f2.t": "Regras completas",
+      "f2.d": "Baralho de 40 cartas, melhor de 3 rodadas, regras de empate, truco → seis → nove → doze, mão de onze e mão de ferro.",
+      "f3.t": "Dicas na hora",
+      "f3.d": "Ative as dicas para receber uma sugestão de jogada e a explicação de por que ela é boa.",
+      "f4.t": "Tutorial passo a passo",
+      "f4.d": "Aprenda com cartas ilustradas e quizzes rápidos. Disponível em português e inglês.",
+      "modes.eyebrow": "Modos",
+      "modes.title": "Paulista ou Mineiro?",
+      "modes.lead": "Os dois modos mais jogados do Brasil, cada um com suas manilhas e sua escada de apostas.",
+      "modes.p.man": "A carta seguinte à vira, na ordem ♦ &lt; ♠ &lt; ♥ &lt; ♣ (zap)",
+      "modes.m.man": "Fixas: 4♣ (zap) &gt; 7♥ &gt; A♠ (espadilha) &gt; 7♦ (pica-fumo)",
+      "modes.ladder": "Escada de apostas",
+      "modes.special": "Mão especial",
+      "modes.p.special": "<em>Mão de onze</em> (11 pontos)",
+      "modes.m.special": "<em>Mão de dez</em> (10 pontos)",
+      "modes.win": "Vitória",
+      "modes.twelve": "Quem fizer 12 pontos primeiro",
+      "opp.eyebrow": "Adversários",
+      "opp.title": "Escolha quem senta na mesa",
+      "opp.lead": "Quatro adversários fictícios, do iniciante ao mestre. Todos jogam limpo: só conhecem as próprias cartas e as que já foram jogadas. O objetivo é se divertir!",
+      "opp.l1": "Iniciante",
+      "opp.l2": "Amadora",
+      "opp.l3": "Profissional",
+      "opp.l4": "Mestre",
+      "opp.d1": "Joga carta aleatória com frequência, avalia mal a mão e nunca blefa.",
+      "opp.d2": "Conhece o básico, mas lê mal a mão e raramente blefa.",
+      "opp.d3": "Jogo de manual: ganha barato, guarda carta forte e blefa de vez em quando.",
+      "opp.d4": "Antes de cada decisão, simula centenas de distribuições possíveis usando só as cartas que não viu, e escolhe a jogada com mais pontos esperados.",
+      "gal.eyebrow": "Telas",
+      "gal.title": "Dá uma olhada na mesa",
+      "gal.c1": "Escolha do adversário",
+      "gal.c2": "Jogando com dicas",
+      "gal.c3": "O bot pede truco",
+      "gal.c4": "Tutorial: manilhas",
+      "gal.c5": "Quiz do tutorial",
+      "gal.c6": "Truco Mineiro",
+      "inst.eyebrow": "Instalação",
+      "inst.title": "Como instalar",
+      "inst.lead": "O Truco é instalado pelo Cargo, o gerenciador de pacotes do Rust. Funciona em macOS, Linux e Windows.",
+      "inst.s1.t": "Instale o Rust",
+      "inst.s1.d": "Se ainda não tem, instale pelo rustup. A versão do toolchain é fixada no projeto e baixada automaticamente. No Windows, use o instalador de rustup.rs.",
+      "inst.s2.t": "Instale o jogo",
+      "inst.s2.d": "O Cargo baixa o código, compila e coloca o binário no seu PATH.",
+      "inst.s3.t": "Jogue!",
+      "inst.s3.d": "Abra o jogo pelo terminal. A linguagem pode ser trocada a qualquer momento no app.",
+      "inst.src.t": "Rodar a partir do código-fonte",
+      "inst.src.d": "Prefere clonar o repositório? Também dá:",
+      "inst.note": "Mais detalhes sobre arquitetura e desenvolvimento estão na <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">documentação técnica</a>.",
+      "how.eyebrow": "Regras",
+      "how.title": "Como jogar (versão rápida)",
+      "how.1": "Cada mão você recebe 3 cartas e uma <strong>vira</strong> é virada na mesa. As manilhas são as cartas do valor seguinte ao da vira.",
+      "how.2": "Força das cartas, da mais fraca à mais forte: <span class=\"rank\">4 5 6 7 Q J K A 2 3</span>, e depois as manilhas.",
+      "how.3": "Cada jogador joga uma carta por rodada. Quem ganhar 2 das 3 rodadas leva a mão.",
+      "how.4": "Uma mão vale 1 ponto. Na sua vez você pode pedir <strong>Truco</strong> e subir para 3; o adversário pode aumentar para 6, 9 e 12.",
+      "how.5": "Quem fizer 12 pontos primeiro vence a partida.",
+      "how.mineiro": "No <strong>Truco Mineiro</strong> não há vira: as manilhas são sempre 4♣ &gt; 7♥ &gt; A♠ &gt; 7♦, a mão começa valendo 2 pontos (truco 4, seis 8, nove 10, doze 12) e a mão especial acontece aos 10 pontos. O tutorial do jogo explica tudo em detalhes.",
+      "footer.made": "Truco · jogo de cartas para desktop ♣"
+    },
+    "en": {
+      "doc.title": "Truco — a desktop card game",
+      "nav.features": "Features",
+      "nav.modes": "Modes",
+      "nav.opponents": "Opponents",
+      "nav.install": "Install",
+      "hero.eyebrow": "Desktop card game",
+      "hero.title": "Let's play <em>truco</em>!",
+      "hero.lead": "Play Truco Paulista or Mineiro one-on-one at a round table in a Brazilian boteco. Face bots at four skill levels and learn the rules with an interactive tutorial.",
+      "hero.b1": "Truco Paulista",
+      "hero.b2": "Truco Mineiro",
+      "hero.b4": "PT-BR · English",
+      "hero.cta": "How to install ↓",
+      "alt.menu": "Truco main menu",
+      "features.eyebrow": "Features",
+      "features.title": "Everything a good game of truco needs",
+      "features.lead": "Complete rules, opponents with personality and help for beginners.",
+      "f1.t": "Two game modes",
+      "f1.d": "Truco Paulista with a vira and shifting manilhas, or Truco Mineiro with fixed manilhas. Pick one in the main menu.",
+      "f2.t": "Complete rules",
+      "f2.d": "40-card deck, best of 3 rounds, tie rules, truco → six → nine → twelve, hand of eleven and iron hand.",
+      "f3.t": "Hints on demand",
+      "f3.d": "Turn hints on to get a suggested move and an explanation of why it is a good one.",
+      "f4.t": "Step-by-step tutorial",
+      "f4.d": "Learn with illustrated cards and quick quizzes. Available in Portuguese and English.",
+      "modes.eyebrow": "Modes",
+      "modes.title": "Paulista or Mineiro?",
+      "modes.lead": "The two most popular variants in Brazil, each with its own manilhas and raise ladder.",
+      "modes.p.man": "The rank right after the vira, ordered ♦ &lt; ♠ &lt; ♥ &lt; ♣ (zap)",
+      "modes.m.man": "Fixed: 4♣ (zap) &gt; 7♥ &gt; A♠ (espadilha) &gt; 7♦ (pica-fumo)",
+      "modes.ladder": "Raise ladder",
+      "modes.special": "Special hand",
+      "modes.p.special": "<em>Mão de onze</em> (11 points)",
+      "modes.m.special": "<em>Mão de dez</em> (10 points)",
+      "modes.win": "Victory",
+      "modes.twelve": "First to 12 points",
+      "opp.eyebrow": "Opponents",
+      "opp.title": "Pick who sits at the table",
+      "opp.lead": "Four fictional opponents, from beginner to master. They all play fair: they only know their own cards and the ones already played. It's all about having fun!",
+      "opp.l1": "Beginner",
+      "opp.l2": "Amateur",
+      "opp.l3": "Professional",
+      "opp.l4": "Master",
+      "opp.d1": "Often plays a random card, misjudges his hand and never bluffs.",
+      "opp.d2": "Knows the basics but misreads hands and rarely bluffs.",
+      "opp.d3": "Textbook play: beats cheaply, saves strong cards, bluffs sometimes.",
+      "opp.d4": "Before every decision, simulates hundreds of possible deals using only the cards he hasn't seen, and picks the move with the best expected points.",
+      "gal.eyebrow": "Screenshots",
+      "gal.title": "Take a look at the table",
+      "gal.c1": "Choosing an opponent",
+      "gal.c2": "Playing with hints",
+      "gal.c3": "The bot calls truco",
+      "gal.c4": "Tutorial: manilhas",
+      "gal.c5": "Tutorial quiz",
+      "gal.c6": "Truco Mineiro",
+      "inst.eyebrow": "Installation",
+      "inst.title": "How to install",
+      "inst.lead": "Truco is installed with Cargo, Rust's package manager. It runs on macOS, Linux and Windows.",
+      "inst.s1.t": "Install Rust",
+      "inst.s1.d": "If you don't have it yet, install it with rustup. The toolchain version is pinned in the project and downloaded automatically. On Windows, use the installer from rustup.rs.",
+      "inst.s2.t": "Install the game",
+      "inst.s2.d": "Cargo downloads the code, builds it and puts the binary on your PATH.",
+      "inst.s3.t": "Play!",
+      "inst.s3.d": "Start the game from your terminal. You can switch languages at any time inside the app.",
+      "inst.src.t": "Run from source",
+      "inst.src.d": "Prefer cloning the repository? That works too:",
+      "inst.note": "Architecture and development details live in the <a href=\"https://github.com/joaolfp/truco/blob/main/docs/README.md\" target=\"_blank\" rel=\"noopener\">technical documentation</a>.",
+      "how.eyebrow": "Rules",
+      "how.title": "How to play (quick version)",
+      "how.1": "Each hand you get 3 cards and a <strong>vira</strong> is turned face up. The manilhas are the cards of the rank right after the vira.",
+      "how.2": "Card strength, weakest to strongest: <span class=\"rank\">4 5 6 7 Q J K A 2 3</span>, then the manilhas.",
+      "how.3": "Each player plays one card per round. Win 2 of the 3 rounds to win the hand.",
+      "how.4": "A hand is worth 1 point. On your turn you can call <strong>Truco</strong> to raise it to 3, and the opponent can raise back to 6, 9 and 12.",
+      "how.5": "First to 12 points wins the match.",
+      "how.mineiro": "In <strong>Truco Mineiro</strong> there is no vira: the manilhas are always 4♣ &gt; 7♥ &gt; A♠ &gt; 7♦, hands start at 2 points (truco 4, six 8, nine 10, twelve 12) and the special hand happens at 10 points. The in-game tutorial explains everything in detail.",
+      "footer.made": "Truco · a desktop card game ♣"
+    }
+  };
+
+  function readSavedLang() {
+    try {
+      const fromUrl = new URLSearchParams(location.search).get("lang");
+      if (fromUrl && I18N[fromUrl]) return fromUrl;
+      const saved = localStorage.getItem("truco-lang");
+      if (saved && I18N[saved]) return saved;
+    } catch (_) {}
+    return "pt-BR";
+  }
+
+  function setLang(lang) {
+    const dict = I18N[lang] || I18N["pt-BR"];
+    document.documentElement.lang = lang;
+    document.title = dict["doc.title"];
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const v = dict[el.dataset.i18n];
+      if (v !== undefined) el.innerHTML = v;
+    });
+    document.querySelectorAll("[data-i18n-alt]").forEach(el => {
+      const v = dict[el.dataset.i18nAlt];
+      if (v !== undefined) el.alt = v.replace(/<[^>]+>/g, "");
+    });
+    document.querySelectorAll(".lang button").forEach(b => {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+    document.querySelectorAll(".copy").forEach(b => { b.textContent = lang === "en" ? "Copy" : "Copiar"; });
+    try { localStorage.setItem("truco-lang", lang); } catch (_) {}
+  }
+
+  document.querySelectorAll(".lang button").forEach(b => {
+    b.addEventListener("click", () => setLang(b.dataset.lang));
+  });
+
+  // Copy buttons on code blocks
+  document.querySelectorAll(".code").forEach(block => {
+    const btn = document.createElement("button");
+    btn.className = "copy";
+    btn.type = "button";
+    btn.addEventListener("click", async () => {
+      const text = block.querySelector(".cmd").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        const prev = btn.textContent;
+        btn.textContent = "✓";
+        setTimeout(() => { btn.textContent = prev; }, 1200);
+      } catch (_) {}
+    });
+    block.appendChild(btn);
+  });
+
+  // Lightbox for screenshots
+  const lb = document.getElementById("lightbox");
+  const lbImg = lb.querySelector("img");
+  document.querySelectorAll(".gallery img, .hero-shot").forEach(img => {
+    img.addEventListener("click", () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lb.classList.add("open");
+    });
+  });
+  lb.addEventListener("click", () => lb.classList.remove("open"));
+  document.addEventListener("keydown", e => { if (e.key === "Escape") lb.classList.remove("open"); });
+
+  setLang(readSavedLang());
+</script>
+</body>
+</html>
