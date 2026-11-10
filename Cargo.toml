@@ -6,6 +6,9 @@ description = "Truco Paulista and Truco Mineiro card game against bots"
 homepage = "https://github.com/joaolfp/truco"
 repository = "https://github.com/joaolfp/truco"
 license = "MIT"
+# Unit tests live in tests/ but are compiled inside their modules via
+# `#[path]`, so Cargo must not treat them as integration tests.
+autotests = false
 
 [dependencies]
 fastrand = "2.5.0"
