@@ -2,7 +2,7 @@
 lockfile = true
 
 [tools]
-zizmor = "1.32.0"
+zizmor = "latest"
 
 [tasks.lint]
 run = "cargo clippy --all-targets --all-features"
@@ -27,8 +27,6 @@ run = "cargo doc --no-deps"
 
 [tasks.fmt]
 run = "cargo fmt --all -- --check"
-
-
 
 [tasks.zizmor]
 run = "zizmor .github/workflows"
