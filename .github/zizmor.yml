@@ -1,0 +1,6 @@
+rules:
+  # Suggests `$/...` for local reusable workflows in release-plz.yml. That
+  # workflow only runs after a merge to main, so a syntax problem would only
+  # show up on a release; keep `./...` until it can be tested safely.
+  self-repository:
+    disable: true
