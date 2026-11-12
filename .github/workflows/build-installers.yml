@@ -79,7 +79,7 @@ jobs:
         # libfuse2 for the AppImage, libasound2-dev for game sounds (ALSA).
         run: sudo apt-get update && sudo apt-get install -y libfuse2 libasound2-dev
 
-      - uses: Swatinem/rust-cache@11da8522bc3856a8fbc565f1d1530989c793d67d
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Install cargo-packager
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
