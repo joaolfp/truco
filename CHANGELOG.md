@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [0.3.0](https://github.com/joaolfp/truco/compare/v0.2.0...v0.3.0) - 2026-11-12
+
+### Dependency Updates
+
+- *(deps)* update taiki-e/install-action action to v2.90.3
+
+### Features
+
+- add table sounds for played cards and truco calls
+- show the app version and update in place from the menu
+- publish the landing page to GitHub Pages on each release
+
 ## [0.2.0](https://github.com/joaolfp/truco/compare/v0.1.0...v0.2.0) - 2026-11-08
 
 ### Bug Fixes
