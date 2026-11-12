@@ -28,6 +28,7 @@ use crate::game::Variant;
 use crate::i18n::Language;
 use crate::opponents::Difficulty;
 use crate::opponents::Opponent;
+use crate::sound::Sounds;
 use crate::update;
 use crate::update::Release;
 
@@ -70,6 +71,7 @@ pub enum Message {
 	TutorialNext,
 	QuizAnswer(usize),
 	ToggleHints(bool),
+	ToggleSound(bool),
 	Act(Action),
 	NextHand,
 	BotTick,
@@ -90,6 +92,8 @@ pub struct App {
 	/// Who the player is facing in the current match.
 	opponent: Opponent,
 	hints: bool,
+	sound: bool,
+	sounds: Sounds,
 	tutorial_step: usize,
 	quiz_answer: Option<usize>,
 	rng: fastrand::Rng,
@@ -107,6 +111,8 @@ impl Default for App {
 			variant: Variant::default(),
 			opponent: Opponent::for_difficulty(Difficulty::default()),
 			hints: false,
+			sound: true,
+			sounds: Sounds::new(),
 			tutorial_step: 0,
 			quiz_answer: None,
 			rng: fastrand::Rng::new(),
@@ -176,6 +182,7 @@ impl App {
 				self.opponent = Opponent::for_difficulty(difficulty);
 				self.game = Some(Game::new(self.variant));
 				self.screen = Screen::Game;
+				self.play_sounds(0);
 			}
 			Message::TutorialPrevious => {
 				self.tutorial_step = self.tutorial_step.saturating_sub(1);
@@ -187,15 +194,20 @@ impl App {
 			}
 			Message::QuizAnswer(answer) => self.quiz_answer = Some(answer),
 			Message::ToggleHints(enabled) => self.hints = enabled,
+			Message::ToggleSound(enabled) => self.sound = enabled,
 			Message::Act(action) => {
 				if let Some(game) = &mut self.game {
+					let seen = game.events.len();
 					// Illegal clicks (e.g. a stale button) are simply ignored.
 					let _ = game.apply(Player::Human, action);
+					self.play_sounds(seen);
 				}
 			}
 			Message::NextHand => {
 				if let Some(game) = &mut self.game {
+					let seen = game.events.len();
 					game.next_hand();
+					self.play_sounds(seen);
 				}
 			}
 			Message::BotTick => {
@@ -203,7 +215,9 @@ impl App {
 					&& let Some(decision) =
 						bot::decide_as(self.opponent.difficulty, game, Player::Bot, &mut self.rng)
 				{
+					let seen = game.events.len();
 					let _ = game.apply(Player::Bot, decision.action);
+					self.play_sounds(seen);
 				}
 			}
 			Message::CheckForUpdate => {
@@ -236,6 +250,16 @@ impl App {
 		Task::none()
 	}
 
+	/// Plays the sounds for the game events logged since `seen`.
+	fn play_sounds(&self, seen: usize) {
+		if let Some(game) = &self.game
+			&& self.sound
+			&& !self.touring
+		{
+			self.sounds.play_events(&game.events, seen);
+		}
+	}
+
 	pub fn subscription(&self) -> Subscription<Message> {
 		let bot_to_act = !self.touring
 			&& self.screen == Screen::Game
@@ -258,7 +282,7 @@ impl App {
 			Screen::Tutorial => tutorial::view(self.language, self.tutorial_step, self.quiz_answer),
 			Screen::Opponents => opponents::view(self.language, self.variant),
 			Screen::Game => match &self.game {
-				Some(game) => table::view(game, self.opponent, self.language, self.hints),
+				Some(game) => table::view(game, self.opponent, self.language, self.hints, self.sound),
 				None => menu::view(self.language, self.variant, false, &self.update),
 			},
 		};

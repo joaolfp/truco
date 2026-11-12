@@ -51,6 +51,7 @@ pub fn view<'a>(
 	opponent: Opponent,
 	language: Language,
 	hints: bool,
+	sound: bool,
 ) -> Element<'a, Message> {
 	let suggestion = (hints && game.actor() == Some(Player::Human))
 		.then(|| bot::decide(game, Player::Human, None))
@@ -73,7 +74,7 @@ pub fn view<'a>(
 		canvas(scene::Table { game }).width(Fill).height(Fill),
 		overlay,
 	];
-	let main = column![top_bar(game, opponent, language, hints), table]
+	let main = column![top_bar(game, opponent, language, hints, sound), table]
 		.spacing(12)
 		.width(Fill);
 
@@ -110,6 +111,7 @@ fn top_bar<'a>(
 	opponent: Opponent,
 	language: Language,
 	hints: bool,
+	sound: bool,
 ) -> Element<'a, Message> {
 	let strings = language.strings();
 	let score = container(
@@ -138,6 +140,9 @@ fn top_bar<'a>(
 		toggler(hints)
 			.label(strings.hints)
 			.on_toggle(Message::ToggleHints),
+		toggler(sound)
+			.label(strings.sound)
+			.on_toggle(Message::ToggleSound),
 		pick_list(Language::ALL, Some(language), Message::SetLanguage),
 		button(strings.menu)
 			.on_press(Message::OpenMenu)
