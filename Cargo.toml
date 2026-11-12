@@ -14,6 +14,7 @@ autotests = false
 fastrand = "2.5.0"
 iced = { version = "0.14", features = ["canvas", "tokio"] }
 png = "0.18.1"
+rodio = { version = "0.23", default-features = false, features = ["playback"] }
 serde = { version = "1.0.229", features = ["derive"] }
 ureq = { version = "3", features = ["json"] }
 
@@ -45,3 +46,7 @@ signing-identity = "-"
 installer-mode = "currentUser"
 languages = ["PortugueseBR", "English"]
 display-language-selector = true
+
+[package.metadata.packager.deb]
+# ALSA, used for the game sounds (renamed libasound2t64 on newer Ubuntu).
+depends = ["libasound2 | libasound2t64"]

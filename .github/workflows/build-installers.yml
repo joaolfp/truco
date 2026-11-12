@@ -74,9 +74,10 @@ jobs:
         if: runner.os == 'macOS'
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
-      - name: Install AppImage dependencies
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libfuse2
+        # libfuse2 for the AppImage, libasound2-dev for game sounds (ALSA).
+        run: sudo apt-get update && sudo apt-get install -y libfuse2 libasound2-dev
 
       - uses: Swatinem/rust-cache@11da8522bc3856a8fbc565f1d1530989c793d67d
 

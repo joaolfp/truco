@@ -7,6 +7,7 @@ mod bot;
 mod game;
 mod i18n;
 mod opponents;
+mod sound;
 mod ui;
 mod update;
 

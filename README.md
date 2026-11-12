@@ -35,6 +35,7 @@ The app ships in **Brazilian Portuguese** by default and can be switched to **En
   | Bigode | ★★★★ Master | Before every decision, simulates hundreds of possible deals using only the cards he hasn't seen (no cheating) and picks the move with the best expected points |
 - **Hints**: turn them on to get a suggested move and an explanation of why it is a good one
 - **Step-by-step tutorial** with illustrated cards and quick quizzes
+- **Table sounds**: cards hitting the felt and knocks on the table for a truco (can be muted in the game)
 - **Two languages**: Português (BR) and English
 
 ## Screenshots
