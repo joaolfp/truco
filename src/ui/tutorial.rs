@@ -174,7 +174,7 @@ fn illustration(
 						let reveal = quiz_answer == Some(quiz.answer) && index == quiz.answer;
 						row.push(card_button(
 							option,
-							reveal,
+							reveal.then_some(GOLD),
 							medium,
 							Some(Message::QuizAnswer(index)),
 						))
