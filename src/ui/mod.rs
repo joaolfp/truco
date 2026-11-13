@@ -130,8 +130,10 @@ impl App {
 				touring: true,
 				..Self::default()
 			};
+
 			(app, capture::start())
 		}
+
 		#[cfg(not(feature = "screenshots"))]
 		{
 			(Self::default(), Task::none())
@@ -147,6 +149,7 @@ impl App {
 				let Some(game) = &self.game else {
 					return "Truco".into();
 				};
+
 				format!(
 					"Truco — {} {} x {} {}",
 					self.language.strings().you,
@@ -247,6 +250,7 @@ impl App {
 			#[cfg(feature = "screenshots")]
 			Message::Capture(step) => return capture::update(self, step),
 		}
+
 		Task::none()
 	}
 
@@ -286,6 +290,7 @@ impl App {
 				None => menu::view(self.language, self.variant, false, &self.update),
 			},
 		};
+
 		let background = canvas(scene::Wall).width(Fill).height(Fill);
 		stack![
 			background,

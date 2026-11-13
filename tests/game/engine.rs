@@ -124,6 +124,7 @@ fn random_games_always_finish() {
 		for seed in 0..200 {
 			let mut game = Game::with_seed(seed, variant);
 			let mut rng = fastrand::Rng::with_seed(seed);
+
 			for _ in 0..10_000 {
 				match game.phase {
 					Phase::MatchOver { .. } => break,
@@ -136,6 +137,7 @@ fn random_games_always_finish() {
 					}
 				}
 			}
+
 			assert!(
 				matches!(game.phase, Phase::MatchOver { .. }),
 				"{variant:?} seed {seed}"

@@ -121,6 +121,7 @@ pub fn card_face_bordered<'a, M: 'a>(
 	} else {
 		BLACK_SUIT
 	};
+
 	let corner = column![
 		text(card.rank.label())
 			.font(BOLD)
@@ -198,6 +199,7 @@ pub fn card_button<'a, M: Clone + 'a>(
 				}
 				_ => Border::default().rounded(12),
 			};
+
 			button::Style {
 				background: None,
 				text_color: Color::WHITE,

@@ -127,6 +127,7 @@ fn draw_wall(frame: &mut Frame, size: Size) {
 	let base = rgb(0x3a, 0x22, 0x14);
 	let plank = 84.0;
 	let count = (size.width / plank).ceil() as u32 + 1;
+
 	for i in 0..count {
 		let x = i as f32 * plank;
 		let color = shade(base, (noise(i) - 0.5) * 0.06);
@@ -136,6 +137,7 @@ fn draw_wall(frame: &mut Frame, size: Size) {
 			Size::new(2.0, size.height),
 			rgba(0x18, 0x0d, 0x07, 0.8),
 		);
+
 		for j in 0..3 {
 			let gx = x + 12.0 + noise(i * 7 + j) * (plank - 24.0);
 			frame.fill_rectangle(
@@ -159,21 +161,26 @@ fn circle_band(center: Point, radius: f32, y0: f32, y1: f32) -> Path {
 		let dy = (y - center.y).clamp(-radius, radius);
 		(radius * radius - dy * dy).max(0.0).sqrt()
 	};
+
 	let steps = 12;
 	let mut builder = Builder::new();
+
 	for s in 0..=steps {
 		let y = y0 + (y1 - y0) * s as f32 / steps as f32;
 		let point = Point::new(center.x - half_width(y), y);
+
 		if s == 0 {
 			builder.move_to(point);
 		} else {
 			builder.line_to(point);
 		}
 	}
+
 	for s in (0..=steps).rev() {
 		let y = y0 + (y1 - y0) * s as f32 / steps as f32;
 		builder.line_to(Point::new(center.x + half_width(y), y));
 	}
+
 	builder.close();
 	builder.build()
 }
@@ -203,15 +210,18 @@ fn draw_round_table(frame: &mut Frame, center: Point, radius: f32) {
 		for j in 0..4 {
 			let gy = y0 + 6.0 + noise(200 + i * 5 + j) * (y1 - y0 - 12.0).max(1.0);
 			let dy = gy - center.y;
+
 			if dy.abs() >= top - 4.0 {
 				continue;
 			}
+
 			let half = (top * top - dy * dy).sqrt() - 4.0;
 			let amplitude = 2.0 + noise(300 + i * 5 + j) * 3.0;
 			let segments = ((2.0 * half) / 90.0).ceil().max(1.0) as u32;
 			let step = 2.0 * half / segments as f32;
 			let mut grain = Builder::new();
 			grain.move_to(Point::new(center.x - half, gy));
+
 			for s in 0..segments {
 				let x0 = center.x - half + s as f32 * step;
 				let dir = if s % 2 == 0 { 1.0 } else { -1.0 };
@@ -220,6 +230,7 @@ fn draw_round_table(frame: &mut Frame, center: Point, radius: f32) {
 					Point::new(x0 + step, gy),
 				);
 			}
+
 			frame.stroke(
 				&grain.build(),
 				Stroke::default()
@@ -232,6 +243,7 @@ fn draw_round_table(frame: &mut Frame, center: Point, radius: f32) {
 		if noise(400 + i) > 0.6 {
 			let dy = (y0 + y1) / 2.0 - center.y;
 			let half = (top * top - dy * dy).max(0.0).sqrt();
+
 			if half > 60.0 {
 				let kx = center.x - half + 30.0 + noise(500 + i) * (2.0 * half - 60.0);
 				let knot = Point::new(kx, (y0 + y1) / 2.0);
@@ -327,6 +339,7 @@ fn draw_card(frame: &mut Frame, center: Point, angle: f32, card: Option<Card>, h
 				} else {
 					rgb(0x1a, 0x1a, 0x1e)
 				};
+
 				let corner_x = top_left.x + 14.0;
 				frame.fill_text(card_text(
 					card.rank.label(),
@@ -382,6 +395,7 @@ fn draw_deck_and_vira(frame: &mut Frame, at: Point, game: &Game) {
 			false,
 		);
 	}
+
 	for i in 0..6 {
 		let offset = i as f32 * 1.4;
 		draw_card(
@@ -399,12 +413,14 @@ fn draw_deck_and_vira(frame: &mut Frame, at: Point, game: &Game) {
 /// on top of earlier ones.
 fn draw_pile(frame: &mut Frame, center: Point, game: &Game, hints: bool) {
 	let seed = game.hand_number.wrapping_mul(97);
+
 	for (index, &(player, card)) in game.hand_plays.iter().enumerate() {
 		let i = index as u32;
 		let toward = match player {
 			Player::Human => 30.0,
 			Player::Bot => -30.0,
 		};
+
 		let jitter_x = (noise(seed + i * 3) - 0.5) * 70.0;
 		let jitter_y = (noise(seed + i * 3 + 1) - 0.5) * 30.0;
 		let angle = (noise(seed + i * 3 + 2) - 0.5) * 0.9;
@@ -525,12 +541,14 @@ fn draw_beer(frame: &mut Frame, base: Point) {
 	foam.line_to(Point::new(gx + gw_top - inset * 0.18, top_y + 16.0));
 	foam.close();
 	frame.fill(&foam.build(), rgb(0xfb, 0xf6, 0xe8));
+
 	for (dx, r) in [(10.0, 6.0), (22.0, 7.0), (36.0, 6.5), (47.0, 5.0)] {
 		frame.fill(
 			&Path::circle(Point::new(gx + dx, top_y + 3.0), r),
 			rgb(0xfb, 0xf6, 0xe8),
 		);
 	}
+
 	for i in 0..7 {
 		let x = gx + inset + 4.0 + noise(600 + i) * (gw_bottom - 8.0);
 		let y = top_y + 24.0 + noise(700 + i) * (gh - 32.0);
@@ -539,6 +557,7 @@ fn draw_beer(frame: &mut Frame, base: Point) {
 			rgba(0xff, 0xff, 0xff, 0.6),
 		);
 	}
+
 	for i in 1..8 {
 		let t = i as f32 / 8.0;
 		let mut rib = Builder::new();
@@ -551,6 +570,7 @@ fn draw_beer(frame: &mut Frame, base: Point) {
 				.with_color(rgba(0xff, 0xff, 0xff, 0.22)),
 		);
 	}
+
 	frame.stroke(
 		&glass(0.0),
 		Stroke::default()
@@ -572,6 +592,7 @@ fn draw_peanuts(frame: &mut Frame, center: Point, radius: f32) {
 	// Peanuts spread evenly with a golden-angle spiral, slightly jittered.
 	let count = 30;
 	let golden = PI * (3.0 - 5.0_f32.sqrt());
+
 	for i in 0..count {
 		let t = (i as f32 + 0.5) / count as f32;
 		let distance = t.sqrt() * (radius - 18.0);
@@ -591,6 +612,7 @@ fn draw_peanuts(frame: &mut Frame, center: Point, radius: f32) {
 			rgba(0xff, 0xe0, 0xb0, 0.45),
 		);
 	}
+
 	frame.stroke(
 		&Path::circle(center, radius),
 		Stroke::default()

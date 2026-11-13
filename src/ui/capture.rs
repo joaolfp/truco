@@ -69,11 +69,13 @@ pub fn update(app: &mut App, step: Step) -> Task<Message> {
 			.map(move |shot| Message::Capture(Step::Save(scene, shot))),
 		Step::Save(scene, shot) => {
 			let path = output_dir().join(format!("{}.png", SCENES[scene]));
+
 			if let Err(error) = save_png(&path, &shot) {
 				eprintln!("failed to save {}: {error}", path.display());
 			} else {
 				println!("saved {}", path.display());
 			}
+
 			if scene + 1 < SCENES.len() {
 				Task::done(Message::Capture(Step::Setup(scene + 1)))
 			} else {
@@ -152,19 +154,23 @@ fn find_game(variant: Variant, wanted: impl Fn(&Game) -> bool) -> Game {
 		let mut game = Game::with_seed(seed, variant);
 		// Show a match in progress rather than a 0 x 0 scoreboard.
 		game.scores = [5, 7];
+
 		for _ in 0..12 {
 			if wanted(&game) {
 				return game;
 			}
+
 			let Some(actor) = game.actor() else { break };
 			let Some(decision) = bot::decide(&game, actor, None) else {
 				break;
 			};
+
 			if game.apply(actor, decision.action).is_err() {
 				break;
 			}
 		}
 	}
+
 	Game::new(variant)
 }
 

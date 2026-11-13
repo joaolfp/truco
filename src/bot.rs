@@ -110,14 +110,17 @@ fn choose_card(game: &Game, player: Player) -> Decision {
 
 	if let Some(&(_, opponent_card)) = game.table.first() {
 		let target = game.strength(opponent_card);
+
 		if let Some(&index) = by_strength
 			.iter()
 			.find(|&&i| game.strength(hand[i]) > target)
 		{
 			return play(index, Reason::BeatCheaply);
 		}
+
 		// A tie wins the hand when we already took the first trick.
 		let won_first = game.tricks.first().and_then(|t| t.winner()) == Some(player);
+
 		if won_first
 			&& let Some(&index) = by_strength
 				.iter()
@@ -125,6 +128,7 @@ fn choose_card(game: &Game, player: Player) -> Decision {
 		{
 			return play(index, Reason::TieIsEnough);
 		}
+
 		return play(weakest, Reason::DiscardWeakest);
 	}
 
@@ -154,12 +158,14 @@ const BEGINNER: Style = Style {
 	bluff: 0.0,
 	raises_back: false,
 };
+
 const AMATEUR: Style = Style {
 	noise: 0.15,
 	random_card: 0.2,
 	bluff: 0.03,
 	raises_back: true,
 };
+
 const PROFESSIONAL: Style = Style {
 	noise: 0.0,
 	random_card: 0.0,
@@ -198,6 +204,7 @@ fn heuristic(
 	if game.actor() != Some(player) {
 		return None;
 	}
+
 	let mut roll = || rng.as_mut().map_or(0.5, |rng| rng.f32());
 	let conf = (confidence(game, player) + (roll() - 0.5) * 2.0 * style.noise).clamp(0.0, 1.0);
 
@@ -216,6 +223,7 @@ fn heuristic(
 		Phase::AwaitingResponse { proposed, .. } => {
 			let can_raise = style.raises_back && game.raise_target(player).is_some();
 			let pressure = stake_pressure(proposed);
+
 			if can_raise && conf > 0.78 + pressure && roll() > 0.25 {
 				Some(Decision {
 					action: Action::Raise,
@@ -237,6 +245,7 @@ fn heuristic(
 			if let Some(target) = game.raise_target(player) {
 				let threshold = 0.68 + stake_pressure(target);
 				let bluff = roll() < style.bluff && game.tricks.len() < 2;
+
 				if conf > threshold || bluff {
 					return Some(Decision {
 						action: Action::Raise,
@@ -244,7 +253,9 @@ fn heuristic(
 					});
 				}
 			}
+
 			let cards = game.hand(player).len();
+
 			if cards > 1 && roll() < style.random_card {
 				let index = ((roll() * cards as f32) as usize).min(cards - 1);
 				return Some(Decision {
@@ -252,6 +263,7 @@ fn heuristic(
 					reason: Reason::DiscardWeakest,
 				});
 			}
+
 			Some(choose_card(game, player))
 		}
 		Phase::HandOver | Phase::MatchOver { .. } => None,
@@ -288,20 +300,24 @@ mod master {
 
 		// Only card play is simulated; raises are decided outside.
 		sim.phase = Phase::Playing;
+
 		if let Some(index) = first
 			&& sim.apply(player, Action::Play(index)).is_err()
 		{
 			return 0.0;
 		}
+
 		while sim.phase == Phase::Playing {
 			let actor = sim.turn;
 			let Action::Play(index) = choose_card(&sim, actor).action else {
 				break;
 			};
+
 			if sim.apply(actor, Action::Play(index)).is_err() {
 				break;
 			}
 		}
+
 		match sim.outcome {
 			Some(HandOutcome::Won { winner, .. }) if winner == player => 1.0,
 			Some(HandOutcome::Draw) => 0.5,
@@ -320,12 +336,15 @@ mod master {
 	/// the weaker card is kept to save strength for later.
 	fn best_card(game: &Game, player: Player, rng: &mut fastrand::Rng) -> (usize, f32) {
 		let mut best = (0, -1.0);
+
 		for index in sorted_indices(game, player) {
 			let rate = win_rate(game, player, Some(index), rng);
+
 			if rate > best.1 + 0.03 {
 				best = (index, rate);
 			}
 		}
+
 		best
 	}
 
@@ -333,6 +352,7 @@ mod master {
 		if game.actor() != Some(player) {
 			return None;
 		}
+
 		let value = |stake| f32::from(game.stake_value(stake));
 
 		match game.phase {
@@ -375,10 +395,12 @@ mod master {
 			}
 			Phase::Playing => {
 				let (index, p) = best_card(game, player, rng);
+
 				if let Some(target) = game.raise_target(player) {
 					let strong = p > 0.72 + stake_pressure(target);
 					// Calculated bluffs: only with a playable hand, early on.
 					let bluff = p > 0.4 && game.tricks.len() < 2 && rng.f32() < 0.1;
+
 					if strong || bluff {
 						return Some(Decision {
 							action: Action::Raise,
@@ -386,6 +408,7 @@ mod master {
 						});
 					}
 				}
+
 				Some(Decision {
 					action: Action::Play(index),
 					reason: if game.hand(player).len() == 1 {

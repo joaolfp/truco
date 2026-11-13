@@ -186,6 +186,7 @@ impl Game {
 			events: Vec::new(),
 			hand_number: 0,
 		};
+
 		game.start_hand();
 		game
 	}
@@ -283,6 +284,7 @@ impl Game {
 		if self.eleven_hand {
 			return None;
 		}
+
 		match self.phase {
 			Phase::Playing if self.turn == player && self.last_raiser != Some(player) => {
 				self.stake.next()
@@ -299,6 +301,7 @@ impl Game {
 		if self.actor() != Some(player) {
 			return false;
 		}
+
 		match (self.phase, action) {
 			(Phase::Playing, Action::Play(index)) => index < self.hand(player).len(),
 			(Phase::Playing | Phase::AwaitingResponse { .. }, Action::Raise) => {
@@ -325,6 +328,7 @@ impl Game {
 		if self.actor() != Some(player) {
 			return Err(ActionError::NotYourTurn);
 		}
+
 		if !self.is_legal(player, action) {
 			return Err(match action {
 				Action::Play(_) => ActionError::InvalidCard,
@@ -389,6 +393,7 @@ impl Game {
 			}
 			_ => return Err(ActionError::NotAllowed),
 		}
+
 		Ok(())
 	}
 
@@ -412,6 +417,7 @@ impl Game {
 			std::cmp::Ordering::Less => TrickResult::Won(follower),
 			std::cmp::Ordering::Equal => TrickResult::Tied,
 		};
+
 		match result {
 			TrickResult::Won(winner) => {
 				let card = if winner == leader {
@@ -419,6 +425,7 @@ impl Game {
 				} else {
 					follow_card
 				};
+
 				self.events.push(Event::TrickWon {
 					player: winner,
 					card,
@@ -430,6 +437,7 @@ impl Game {
 				self.turn = leader;
 			}
 		}
+
 		self.tricks.push(result);
 		self.last_trick = std::mem::take(&mut self.table);
 
@@ -441,12 +449,14 @@ impl Game {
 				},
 				HandOutcome::Draw => HandOutcome::Draw,
 			};
+
 			self.finish_hand(outcome);
 		}
 	}
 
 	fn finish_hand(&mut self, outcome: HandOutcome) {
 		self.outcome = Some(outcome);
+
 		match outcome {
 			HandOutcome::Won { winner, points } => {
 				let score = &mut self.scores[winner.index()];
@@ -455,6 +465,7 @@ impl Game {
 					player: winner,
 					points,
 				});
+
 				if *score >= WINNING_SCORE {
 					self.events.push(Event::MatchWon { player: winner });
 					self.phase = Phase::MatchOver { winner };
@@ -463,6 +474,7 @@ impl Game {
 			}
 			HandOutcome::Draw => self.events.push(Event::HandDrawn),
 		}
+
 		self.phase = Phase::HandOver;
 	}
 
@@ -496,6 +508,7 @@ pub fn decide_hand(tricks: &[TrickResult]) -> Option<HandOutcome> {
 	use TrickResult::Won;
 
 	let win = |winner| Some(HandOutcome::Won { winner, points: 0 });
+
 	match tricks {
 		[Won(a), Won(b)] if a == b => win(*a),
 		[Won(a), Tied] | [Tied, Won(a)] => win(*a),

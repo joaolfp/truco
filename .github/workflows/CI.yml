@@ -31,6 +31,9 @@ jobs:
       - name: Run build
         run: mise build
 
+      - name: Lint spacing
+        run: mise run lint-spacing
+
       - name: Run tests
         run: mise test
 

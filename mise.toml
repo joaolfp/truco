@@ -28,5 +28,13 @@ run = "cargo doc --no-deps"
 [tasks.fmt]
 run = "cargo fmt --all -- --check"
 
+[tasks.lint-spacing]
+description = "Check blank lines around blocks (for, if, match, ...)"
+run = "python3 scripts/lint_spacing.py"
+
+[tasks.lint-spacing-fix]
+description = "Insert the missing blank lines around blocks"
+run = "python3 scripts/lint_spacing.py --fix"
+
 [tasks.zizmor]
 run = "zizmor .github/workflows"
