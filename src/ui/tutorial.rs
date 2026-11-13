@@ -155,6 +155,7 @@ fn illustration(
 				} else {
 					row.push(text("<").size(28).color(GOLD))
 				};
+
 				row.push(labeled(
 					card_face(card(Rank::Queen, suit), true, medium),
 					label,
@@ -165,6 +166,7 @@ fn illustration(
 			let Some(quiz) = quiz_for(step) else {
 				return space().into();
 			};
+
 			let options =
 				quiz
 					.options
@@ -192,6 +194,7 @@ fn illustration(
 					.into(),
 				None => space().height(24).into(),
 			};
+
 			row![
 				labeled(card_face(quiz.vira, false, medium), strings.vira),
 				column![text(strings.quiz_prompt).font(BOLD), options, feedback]
@@ -244,6 +247,7 @@ fn illustration(
 					} else {
 						row.push(text(">").size(24).color(GOLD))
 					};
+
 					row.push(card_face(manilha, true, small))
 				},
 			);
@@ -279,11 +283,13 @@ fn stake_ladder(language: Language, variant: Variant) -> Element<'static, Messag
 		} else {
 			row.push(text("→").size(24).color(GOLD))
 		};
+
 		let name = if stake == Stake::Base {
 			String::from("—")
 		} else {
 			language.raise_button(stake)
 		};
+
 		row.push(
 			column![
 				badge(
@@ -352,6 +358,7 @@ pub fn view(
 			.style(button::primary)
 			.on_press_maybe((!quiz_blocks_next).then_some(Message::TutorialNext))
 	};
+
 	let navigation = container(row![previous, space::horizontal(), next])
 		.width(Fill)
 		.max_width(900);

@@ -47,8 +47,10 @@ impl Sounds {
 			let Ok(mut sink) = rodio::DeviceSinkBuilder::open_default_sink() else {
 				return;
 			};
+
 			sink.log_on_drop(false);
 			let mut rng = fastrand::Rng::new();
+
 			for sound in receiver {
 				let samples = synthesize(sound, &mut rng);
 				let buffer = SamplesBuffer::new(
@@ -87,6 +89,7 @@ impl Sounds {
 /// repeated sounds from feeling mechanical.
 pub fn synthesize(sound: Sound, rng: &mut fastrand::Rng) -> Vec<f32> {
 	let mut out = Vec::new();
+
 	match sound {
 		Sound::Play => {
 			let tone = 0.9 + rng.f32() * 0.2;
@@ -97,6 +100,7 @@ pub fn synthesize(sound: Sound, rng: &mut fastrand::Rng) -> Vec<f32> {
 			mix(&mut out, 0.16, &knock(rng, 1.0));
 		}
 	}
+
 	normalize(&mut out);
 	out
 }
@@ -148,9 +152,11 @@ fn samples(seconds: f32) -> usize {
 /// Adds `sound` into `out` starting at `at` seconds, growing `out` as needed.
 fn mix(out: &mut Vec<f32>, at: f32, sound: &[f32]) {
 	let start = samples(at);
+
 	if out.len() < start + sound.len() {
 		out.resize(start + sound.len(), 0.0);
 	}
+
 	for (o, s) in out[start..].iter_mut().zip(sound) {
 		*o += s;
 	}
@@ -159,6 +165,7 @@ fn mix(out: &mut Vec<f32>, at: f32, sound: &[f32]) {
 /// Keeps the peak at or below full scale so overlapping layers never clip.
 fn normalize(out: &mut [f32]) {
 	let peak = out.iter().fold(0.0f32, |m, s| m.max(s.abs()));
+
 	if peak > 1.0 {
 		for s in out {
 			*s /= peak;

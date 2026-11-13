@@ -119,6 +119,7 @@ fn update_section(language: Language, update: &UpdateState) -> Element<'static, 
 	]
 	.spacing(6)
 	.align_x(Center);
+
 	if let Some(status) = status {
 		section = section.push(
 			text(status)
@@ -128,6 +129,7 @@ fn update_section(language: Language, update: &UpdateState) -> Element<'static, 
 				.align_x(Center),
 		);
 	}
+
 	section.into()
 }
 
@@ -160,6 +162,7 @@ pub fn view(
 		} else {
 			button::secondary
 		};
+
 		row.push(
 			button(
 				text(language.variant_name(option).trim_start_matches("Truco "))
@@ -185,6 +188,7 @@ pub fn view(
 	.align_x(Center);
 
 	let mut buttons = column![].spacing(12).align_x(Center);
+
 	if has_game {
 		buttons = buttons.push(menu_button(
 			strings.continue_match,
@@ -199,6 +203,7 @@ pub fn view(
 	} else {
 		buttons = buttons.push(menu_button(strings.play, Message::NewGame, button::primary));
 	}
+
 	buttons = buttons.push(menu_button(
 		strings.tutorial,
 		Message::OpenTutorial,

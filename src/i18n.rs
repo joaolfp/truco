@@ -150,6 +150,7 @@ impl Language {
 		let score = variant.special_hand_score();
 		let play = self.points(variant.stake_value(Stake::Truco));
 		let run = self.points(variant.stake_value(Stake::Base));
+
 		match self {
 			Language::PortugueseBr => {
 				format!("{name}! Você tem {score} pontos. Jogar vale {play}; correr dá {run} para {opp}.")
@@ -235,6 +236,7 @@ impl Language {
 		let special = self.special_hand(variant);
 		let special_value = self.points(variant.stake_value(Stake::Truco));
 		let human = |player: &Player| *player == Player::Human;
+
 		match event {
 			Event::NewHand { starter, vira } => {
 				let vira = vira.map(|vira| match self {
@@ -242,6 +244,7 @@ impl Language {
 					Language::English => format!(" Vira: {vira}."),
 				});
 				let vira = vira.unwrap_or_default();
+
 				match (pt, human(starter)) {
 					(true, true) => format!("Nova mão!{vira} Você começa."),
 					(true, false) => format!("Nova mão!{vira} {opp} começa."),
@@ -251,6 +254,7 @@ impl Language {
 			}
 			Event::ElevenHand { player } => {
 				let name = capitalize(special);
+
 				match (pt, human(player)) {
 					(true, true) => format!("{name}! Veja suas cartas e decida se joga."),
 					(true, false) => format!("{opp} está na {special}: decide se joga."),
@@ -261,6 +265,7 @@ impl Language {
 			Event::IronHand => {
 				let score = variant.special_hand_score();
 				let points = self.points(variant.stake_value(Stake::Base));
+
 				match self {
 					Language::PortugueseBr => {
 						format!("Mão de ferro! Os dois têm {score}: vale {points} e não tem truco.")
@@ -285,6 +290,7 @@ impl Language {
 			Event::TrickTied => self.pick("Rodada empatada (cangou)!", "Round tied!").into(),
 			Event::Raised { player, stake } => {
 				let call = self.raise_name(*stake).to_uppercase();
+
 				match (pt, human(player)) {
 					(true, true) => format!("Você pediu {call}!"),
 					(true, false) => format!("{opp} pediu {call}!"),
@@ -294,6 +300,7 @@ impl Language {
 			}
 			Event::Accepted { player, stake } => {
 				let points = self.points(variant.stake_value(*stake));
+
 				match (pt, human(player)) {
 					(true, true) => format!("Você aceitou. A mão vale {points}."),
 					(true, false) => format!("{opp} aceitou. A mão vale {points}."),
@@ -321,6 +328,7 @@ impl Language {
 			},
 			Event::HandWon { player, points } => {
 				let points = self.points(*points);
+
 				match (pt, human(player)) {
 					(true, true) => format!("Você ganhou {points}!"),
 					(true, false) => format!("{opp} ganhou {points}."),
@@ -348,6 +356,7 @@ impl Language {
 		match action {
 			Action::Play(index) => {
 				let card = game.hand(Player::Human)[index];
+
 				match self {
 					Language::PortugueseBr => format!("Jogue o {card}"),
 					Language::English => format!("Play {card}"),

@@ -81,6 +81,7 @@ pub fn check() -> impl Future<Output = Result<Option<Release>, String>> {
 		let release = Release {
 			tag: latest.tag_name,
 		};
+
 		Ok(is_newer(release.version(), CURRENT_VERSION).then_some(release))
 	})
 }
@@ -103,6 +104,7 @@ fn is_newer(candidate: &str, current: &str) -> bool {
 		];
 		parts.next().is_none().then_some(parsed)
 	}
+
 	matches!((parse(candidate), parse(current)), (Some(a), Some(b)) if a > b)
 }
 
@@ -139,9 +141,11 @@ fn download(url: &str, destination: &Path) -> io::Result<()> {
 /// A fresh temporary folder for the downloaded installer.
 fn work_dir() -> io::Result<PathBuf> {
 	let dir = std::env::temp_dir().join(format!("truco-update-{}", std::process::id()));
+
 	if dir.exists() {
 		fs::remove_dir_all(&dir)?;
 	}
+
 	fs::create_dir_all(&dir)?;
 	Ok(dir)
 }
@@ -150,6 +154,7 @@ fn work_dir() -> io::Result<PathBuf> {
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn run(command: &mut Command) -> io::Result<()> {
 	let output = command.output()?;
+
 	if output.status.success() {
 		Ok(())
 	} else {
@@ -173,6 +178,7 @@ fn open(target: &str) -> io::Result<()> {
 	} else {
 		Command::new("xdg-open")
 	};
+
 	command.arg(target).spawn().map(drop)
 }
 
@@ -227,17 +233,21 @@ fn replace_bundle(mount: &Path, bundle: &Path) -> io::Result<()> {
 
 	let staged = bundle.with_extension("app.new");
 	let old = bundle.with_extension("app.old");
+
 	for leftover in [&staged, &old] {
 		if leftover.exists() {
 			fs::remove_dir_all(leftover)?;
 		}
 	}
+
 	run(Command::new("ditto").arg(&new_app).arg(&staged))?;
 	fs::rename(bundle, &old)?;
+
 	if let Err(error) = fs::rename(&staged, bundle) {
 		let _ = fs::rename(&old, bundle);
 		return Err(error);
 	}
+
 	let _ = fs::remove_dir_all(&old);
 	Ok(())
 }

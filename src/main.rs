@@ -36,9 +36,11 @@ fn window_icon() -> Option<window::Icon> {
 	let mut reader = decoder.read_info().ok()?;
 	let mut rgba = vec![0; reader.output_buffer_size()?];
 	let info = reader.next_frame(&mut rgba).ok()?;
+
 	if info.color_type != png::ColorType::Rgba || info.bit_depth != png::BitDepth::Eight {
 		return None;
 	}
+
 	rgba.truncate(info.buffer_size());
 	window::icon::from_rgba(rgba, info.width, info.height).ok()
 }

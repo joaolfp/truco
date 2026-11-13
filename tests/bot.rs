@@ -30,6 +30,7 @@ fn every_difficulty_finishes_matches() {
 			let variant = Variant::ALL[seed as usize % 2];
 			let mut game = Game::with_seed(seed + 1000 * i as u64, variant);
 			let mut rng = fastrand::Rng::with_seed(seed);
+
 			for _ in 0..5_000 {
 				match game.phase {
 					Phase::MatchOver { .. } => break,
@@ -41,6 +42,7 @@ fn every_difficulty_finishes_matches() {
 					}
 				}
 			}
+
 			assert!(
 				matches!(game.phase, Phase::MatchOver { .. }),
 				"{difficulty:?}"
@@ -53,6 +55,7 @@ fn every_difficulty_finishes_matches() {
 fn duel(first: Difficulty, second: Difficulty, seed: u64, variant: Variant) -> Player {
 	let mut game = Game::with_seed(seed, variant);
 	let mut rng = fastrand::Rng::with_seed(seed);
+
 	loop {
 		match game.phase {
 			Phase::MatchOver { winner } => return winner,
@@ -64,6 +67,7 @@ fn duel(first: Difficulty, second: Difficulty, seed: u64, variant: Variant) -> P
 				} else {
 					second
 				};
+
 				let decision = decide_as(difficulty, &game, actor, &mut rng).unwrap();
 				game.apply(actor, decision.action).unwrap();
 			}
@@ -81,6 +85,7 @@ fn harder_opponents_win_more() {
 			})
 			.count()
 	};
+
 	let master_vs_beginner = wins(Difficulty::Master, Difficulty::Beginner);
 	let pro_vs_beginner = wins(Difficulty::Professional, Difficulty::Beginner);
 	let master_vs_pro = wins(Difficulty::Master, Difficulty::Professional);
@@ -98,6 +103,7 @@ fn bot_plays_full_matches() {
 		let variant = Variant::ALL[seed as usize % 2];
 		let mut game = Game::with_seed(seed, variant);
 		let mut rng = fastrand::Rng::with_seed(seed);
+
 		for _ in 0..5_000 {
 			match game.phase {
 				Phase::MatchOver { .. } => break,
@@ -109,6 +115,7 @@ fn bot_plays_full_matches() {
 				}
 			}
 		}
+
 		assert!(matches!(game.phase, Phase::MatchOver { .. }), "seed {seed}");
 	}
 }

@@ -104,6 +104,7 @@ pub fn view<'a>(
 			.style(hint_panel),
 		);
 	}
+
 	side = side.push(event_log(game, opponent, language));
 
 	row![main, side].spacing(16).padding(16).into()
@@ -290,6 +291,7 @@ fn status_line<'a>(game: &'a Game, opponent: Opponent, language: Language) -> El
 		Phase::Playing if game.turn == Player::Human => (strings.your_turn.to_string(), Color::WHITE),
 		_ => (language.thinking(opponent.name), MUTED),
 	};
+
 	container(text(message).size(19).font(BOLD).color(color))
 		.padding([6, 16])
 		.style(panel)
@@ -386,6 +388,7 @@ fn player_hand<'a>(game: &'a Game, hints: bool, suggested: Option<Action>) -> El
 			} else {
 				None
 			};
+
 			card_button(
 				card,
 				border,
@@ -406,6 +409,7 @@ fn event_log<'a>(game: &'a Game, opponent: Opponent, language: Language) -> Elem
 			Event::HandWon { .. } | Event::MatchWon { .. } | Event::HandDrawn => Color::WHITE,
 			_ => MUTED,
 		};
+
 		text(language.event(event, game.variant, opponent.name))
 			.size(14)
 			.color(color)
