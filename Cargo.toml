@@ -3,7 +3,7 @@ name = "truco"
 version = "0.3.0"
 edition = "2024"
 description = "Truco Paulista and Truco Mineiro card game against bots"
-homepage = "https://github.com/joaolfp/truco"
+homepage = "https://joaolfp.github.io/truco/"
 repository = "https://github.com/joaolfp/truco"
 license = "MIT"
 # Unit tests live in tests/ but are compiled inside their modules via
