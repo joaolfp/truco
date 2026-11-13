@@ -20,6 +20,8 @@ use crate::game::Card;
 use crate::opponents::Opponent;
 
 pub const GOLD: Color = Color::from_rgb(0.98, 0.78, 0.20);
+/// Marks the card the hint suggests, distinct from the gold manilha border.
+pub const HINT: Color = Color::from_rgb(0.30, 0.80, 0.95);
 pub const RED_SUIT: Color = Color::from_rgb(0.78, 0.13, 0.13);
 pub const BLACK_SUIT: Color = Color::from_rgb(0.10, 0.10, 0.12);
 pub const HUMAN_COLOR: Color = Color::from_rgb(0.30, 0.75, 0.40);
@@ -70,8 +72,8 @@ pub fn panel(_theme: &iced::Theme) -> container::Style {
 /// A highlighted panel for hints.
 pub fn hint_panel(_theme: &iced::Theme) -> container::Style {
 	container::Style {
-		background: Some(Background::Color(Color::from_rgba(0.98, 0.78, 0.20, 0.15))),
-		border: Border::default().rounded(12).width(2).color(GOLD),
+		background: Some(Background::Color(Color { a: 0.15, ..HINT })),
+		border: Border::default().rounded(12).width(2).color(HINT),
 		text_color: Some(Color::WHITE),
 		..container::Style::default()
 	}
@@ -104,6 +106,15 @@ pub fn round_marker<'a, M: 'a>(fill: Option<Color>) -> Element<'a, M> {
 
 /// Draws the face of a card. `highlight` adds a golden border (manilhas, hints).
 pub fn card_face<'a, M: 'a>(card: Card, highlight: bool, width: f32) -> Element<'a, M> {
+	card_face_bordered(card, highlight.then_some(GOLD), width)
+}
+
+/// Draws the face of a card, with a thick `border` in the given color if any.
+pub fn card_face_bordered<'a, M: 'a>(
+	card: Card,
+	border: Option<Color>,
+	width: f32,
+) -> Element<'a, M> {
 	let height = width * 1.45;
 	let color = if card.suit.is_red() {
 		RED_SUIT
@@ -129,12 +140,8 @@ pub fn card_face<'a, M: 'a>(card: Card, highlight: bool, width: f32) -> Element<
 			background: Some(Background::Color(Color::from_rgb(0.99, 0.98, 0.95))),
 			border: Border::default()
 				.rounded(width * 0.1)
-				.width(if highlight { 4 } else { 1 })
-				.color(if highlight {
-					GOLD
-				} else {
-					Color::from_rgb(0.6, 0.6, 0.6)
-				}),
+				.width(if border.is_some() { 4 } else { 1 })
+				.color(border.unwrap_or(Color::from_rgb(0.6, 0.6, 0.6))),
 			shadow: Shadow {
 				color: Color::from_rgba(0.0, 0.0, 0.0, 0.45),
 				offset: Vector::new(0.0, 3.0),
@@ -177,11 +184,11 @@ pub fn card_back<'a, M: 'a>(width: f32) -> Element<'a, M> {
 /// A clickable card. When `on_press` is `None` the card is shown as inactive.
 pub fn card_button<'a, M: Clone + 'a>(
 	card: Card,
-	highlight: bool,
+	border: Option<Color>,
 	width: f32,
 	on_press: Option<M>,
 ) -> Element<'a, M> {
-	button(card_face(card, highlight, width))
+	button(card_face_bordered(card, border, width))
 		.padding(4)
 		.on_press_maybe(on_press)
 		.style(|_, status| {

@@ -82,6 +82,8 @@ impl<Message> Program<Message> for Wall {
 /// a few props.
 pub struct Table<'a> {
 	pub game: &'a Game,
+	/// Manilhas on the table are only highlighted while hints are on.
+	pub hints: bool,
 }
 
 impl<Message> Program<Message> for Table<'_> {
@@ -110,7 +112,7 @@ impl<Message> Program<Message> for Table<'_> {
 			Point::new(center.x - radius * 0.6, center.y - radius * 0.3),
 			self.game,
 		);
-		draw_pile(&mut frame, center, self.game);
+		draw_pile(&mut frame, center, self.game, self.hints);
 		draw_beer(
 			&mut frame,
 			Point::new(center.x + radius * 0.48, center.y + radius * 0.1),
@@ -395,7 +397,7 @@ fn draw_deck_and_vira(frame: &mut Frame, at: Point, game: &Game) {
 /// Every card played this hand, piled in the middle of the table. Each card is
 /// tossed slightly toward its owner with a random twist, and later cards land
 /// on top of earlier ones.
-fn draw_pile(frame: &mut Frame, center: Point, game: &Game) {
+fn draw_pile(frame: &mut Frame, center: Point, game: &Game, hints: bool) {
 	let seed = game.hand_number.wrapping_mul(97);
 	for (index, &(player, card)) in game.hand_plays.iter().enumerate() {
 		let i = index as u32;
@@ -411,7 +413,7 @@ fn draw_pile(frame: &mut Frame, center: Point, game: &Game) {
 			Point::new(center.x + jitter_x, center.y + toward + jitter_y),
 			angle,
 			Some(card),
-			game.is_manilha(card),
+			hints && game.is_manilha(card),
 		);
 	}
 }

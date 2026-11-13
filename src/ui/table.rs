@@ -22,6 +22,7 @@ use super::scene;
 use super::widgets::BOLD;
 use super::widgets::BOT_COLOR;
 use super::widgets::GOLD;
+use super::widgets::HINT;
 use super::widgets::HUMAN_COLOR;
 use super::widgets::MUTED;
 use super::widgets::avatar;
@@ -64,14 +65,16 @@ pub fn view<'a>(
 		space::vertical(),
 		status_line(game, opponent, language),
 		actions(game, language),
-		player_hand(game, suggestion.map(|s| s.action)),
+		player_hand(game, hints, suggestion.map(|s| s.action)),
 	]
 	.spacing(12)
 	.align_x(Center)
 	.width(Fill)
 	.height(Fill);
 	let table = stack![
-		canvas(scene::Table { game }).width(Fill).height(Fill),
+		canvas(scene::Table { game, hints })
+			.width(Fill)
+			.height(Fill),
 		overlay,
 	];
 	let main = column![top_bar(game, opponent, language, hints, sound), table]
@@ -88,7 +91,7 @@ pub fn view<'a>(
 					text(language.strings().hint)
 						.font(BOLD)
 						.size(18)
-						.color(GOLD),
+						.color(HINT),
 					text(language.suggestion(suggestion.action, game))
 						.font(BOLD)
 						.size(17),
@@ -366,7 +369,9 @@ fn actions<'a>(game: &'a Game, language: Language) -> Element<'a, Message> {
 	row(buttons).spacing(12).height(48).align_y(Center).into()
 }
 
-fn player_hand<'a>(game: &'a Game, suggested: Option<Action>) -> Element<'a, Message> {
+/// Without hints no card is marked; with them manilhas get a gold border and
+/// the suggested card a hint-colored one.
+fn player_hand<'a>(game: &'a Game, hints: bool, suggested: Option<Action>) -> Element<'a, Message> {
 	let can_play = game.phase == Phase::Playing && game.turn == Player::Human;
 	let cards = game
 		.hand(Player::Human)
@@ -374,10 +379,16 @@ fn player_hand<'a>(game: &'a Game, suggested: Option<Action>) -> Element<'a, Mes
 		.enumerate()
 		.map(|(index, &card)| {
 			let action = Action::Play(index);
-			let highlight = game.is_manilha(card) || suggested == Some(action);
+			let border = if suggested == Some(action) {
+				Some(HINT)
+			} else if hints && game.is_manilha(card) {
+				Some(GOLD)
+			} else {
+				None
+			};
 			card_button(
 				card,
-				highlight,
+				border,
 				HAND_CARD,
 				can_play.then_some(Message::Act(action)),
 			)
