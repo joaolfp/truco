@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here.
 
+## [0.3.1](https://github.com/joaolfp/truco/compare/v0.3.0...v0.3.1) - 2026-11-14
+
+### Bug Fixes
+
+- point package homepage to the GitHub Pages site
+- only highlight cards when hints are enabled
+
+### Dependency Updates
+
+- *(deps)* update rust to v1.100.0 to v1.100.0 ([#27](https://github.com/joaolfp/truco/pull/27))
+- *(deps)* update Rust crate ureq to v3.5.2 ([#26](https://github.com/joaolfp/truco/pull/26))
+
+### Styling
+
+- add spacing lint and blank lines around blocks
+
 ## [0.3.0](https://github.com/joaolfp/truco/compare/v0.2.0...v0.3.0) - 2026-11-12
 
 ### Dependency Updates
